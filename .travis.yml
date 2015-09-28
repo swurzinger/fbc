@@ -1,14 +1,15 @@
 language: c
 install: 
-  - wget -q -O fb.tar.gz http://downloads.sourceforge.net/fbc/FreeBASIC-0.24.0-linux.tar.gz?download
+  - wget -O fb.tar.gz --user-agent="WGet (Linux i686)" http://sourceforge.net/projects/fbc/files/latest/download
   - tar zxf fb.tar.gz
-  - mkdir fbinstall
-  - cd FreeBASIC-0.24.0-linux 
-  - sudo ./install.sh -i ../fbinstall
+  - mkdir fbc
+  - cd FreeBASIC-*-linux-x86
+  - sudo ./install.sh -i ../fbc
   - cd ..
-  - ls fbinstall/bin
+  - rm -rf FreeBASIC-*-linux-x86
+  - ls fbc/bin
   - sudo apt-get install libncurses5-dev libstdc++6 build-essential libX11-dev libXext-dev libXpm-dev libXrender-dev libXrandr-dev libgpm-dev
-script: make FBC=/home/travis/build/mudhairless/fbc/fbinstall/bin/fbc && cd tests && make check
+script: make FBC=~/fbc/bin/fbc
 branches:
   only:
     - master
