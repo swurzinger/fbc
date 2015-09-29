@@ -3,6 +3,8 @@ language: c
 before_install:
   - sudo apt-get update
   - sudo apt-get -f install
+  - sudo apt-get upgrade
+  - sudo apt-get update
   - sudo apt-get install --force-yes ia32-libs ia32-libs-multiarch
 install:
   # download latest fbc release in /home/travis/build/<user>/<repo>/fb.tar.gz
