@@ -8,6 +8,7 @@ install:
   - mkdir ~/fbc
   - cd FreeBASIC-*-linux-x86
   - sudo ./install.sh -i ~/fbc
+  - cd ..
   # install dependencies
   - sudo apt-get install libncurses5-dev libstdc++6 build-essential libX11-dev libXext-dev libXpm-dev libXrender-dev libXrandr-dev libgpm-dev
 script:
