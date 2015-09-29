@@ -2,12 +2,12 @@ language: c
 install: 
   - wget -O fb.tar.gz --user-agent="WGet (Linux i686)" http://sourceforge.net/projects/fbc/files/latest/download
   - tar zxf fb.tar.gz
-  - mkdir fbc
+  - mkdir ~/fbc
   - cd FreeBASIC-*-linux-x86
-  - sudo ./install.sh -i ../fbc
+  - sudo ./install.sh -i ~/fbc
   - cd ..
   - rm -rf FreeBASIC-*-linux-x86
-  - ls fbc/bin
+  - ls ~/fbc/bin
   - sudo apt-get install libncurses5-dev libstdc++6 build-essential libX11-dev libXext-dev libXpm-dev libXrender-dev libXrandr-dev libgpm-dev
 script: make FBC=~/fbc/bin/fbc
 branches:
