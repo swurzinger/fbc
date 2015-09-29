@@ -11,7 +11,18 @@ install:
   - cd ..
   # install dependencies
   - sudo apt-get install libncurses5-dev libstdc++6 build-essential libX11-dev libXext-dev libXpm-dev libXrender-dev libXrandr-dev libgpm-dev
+  - pwd
+  - ls -la
+  - ls -la ~/fbc
+  - ls -la ~/fbc/bin
 script:
+  - pwd
+  - ls -la
+  - ls -la ~/
+  - ls -la ~/fbc
+  - ls -la ~/fbc/bin
+  - chmod +x ~/fbc/bin/fbc
+  - ~/fbc/bin/fbc --version
   - make FBC=/home/travis/fbc/bin/fbc
 branches:
   only:
