@@ -11,21 +11,12 @@ install:
   - cd ..
   # install dependencies
   # sudo apt-get install libncurses5-dev libstdc++6 build-essential libX11-dev libXext-dev libXpm-dev libXrender-dev libXrandr-dev libgpm-dev
-  - sudo dpkg --add-architecture i386
+  - sudo sh -c "echo 'foreign-architecture i386' > /etc/dpkg/dpkg.cfg.d/multiarch"
   - sudo apt-get update
-  - sudo apt-get install gcc-multilib g++-multilib lib32ncurses5-dev
+  - sudo apt-get install ia32-libs
+  - sudo apt-get install lib32ncurses5-dev
   - sudo apt-get install libx11-dev:i386 libxext-dev:i386 libxrender-dev:i386 libxpm-dev:i386 libxrandr-dev:i386 libgpm-dev:i386 libffi-dev:i386 libgl1-mesa-dev
-  - pwd
-  - ls -la
-  - ls -la ~/fbc
-  - ls -la ~/fbc/bin
 script:
-  - pwd
-  - ls -la
-  - ls -la ~/
-  - ls -la ~/fbc
-  - ls -la ~/fbc/bin
-  - chmod +x ~/fbc/bin/fbc
   - ~/fbc/bin/fbc --version
   - make FBC=/home/travis/fbc/bin/fbc
 branches:
