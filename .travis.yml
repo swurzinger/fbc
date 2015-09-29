@@ -1,21 +1,17 @@
 language: c
+
 install:
-  - pwd
-  - ls -la
+  # download latest fbc release in /home/travis/build/<user>/<repo>/fb.tar.gz
   - wget -O fb.tar.gz --user-agent="WGet (Linux i686)" http://sourceforge.net/projects/fbc/files/latest/download
   - tar zxf fb.tar.gz
+  # install fbc in /home/travis/fbc
   - mkdir ~/fbc
   - cd FreeBASIC-*-linux-x86
   - sudo ./install.sh -i ~/fbc
-  - ls ~/fbc/bin
+  # install dependencies
   - sudo apt-get install libncurses5-dev libstdc++6 build-essential libX11-dev libXext-dev libXpm-dev libXrender-dev libXrandr-dev libgpm-dev
-  - cd ~/fbc
-  - pwd
-  - ls -la
 script:
-  - pwd
-  - ls -la
-  - make FBC=~/fbc/bin/fbc
+  - make FBC=/home/travis/fbc/bin/fbc
 branches:
   only:
     - master
