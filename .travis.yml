@@ -8,7 +8,8 @@ before_install:
   # sudo apt-get install --force-yes ia32-libs ia32-libs-multiarch
 install:
   # download latest fbc release in /home/travis/build/<user>/<repo>/fb.tar.gz
-  - wget -O fb.tar.gz --user-agent="WGet (Linux x86_64)" http://sourceforge.net/projects/fbc/files/latest/download
+  # wget -O fb.tar.gz --user-agent="WGet (Linux x86_64)" http://sourceforge.net/projects/fbc/files/latest/download
+  wget -O fb.tar.gz http://sourceforge.net/projects/fbc/files/Binaries%20-%20Linux/FreeBASIC-1.04.0-linux-x86_64.tar.gz/download
   - tar zxf fb.tar.gz
   # install fbc in /home/travis/fbc
   - mkdir ~/fbc
