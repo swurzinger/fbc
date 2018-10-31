@@ -106,7 +106,7 @@ static char *hToUTF8( const FB_WCHAR *src, ssize_t chars, char *dst, ssize_t *by
 	{
 		if( dst == NULL )
 		{
-			dst = malloc( chars * 4 );
+			dst = FBCAST(dst) malloc( chars * 4 );
 			if( dst == NULL )
 				return NULL;
 		}
@@ -154,7 +154,7 @@ static UTF_16 *hUTF32ToUTF16( const FB_WCHAR *src, ssize_t chars, UTF_16 *dst, s
 			if( *bytes == dst_size )
 			{
 				dst_size += sizeof( UTF_16 ) * 8;
-				buffer = realloc( buffer, dst_size );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size );
 				dst = (UTF_16 *)buffer;
 			}
 
@@ -183,7 +183,7 @@ static char *hToUTF16( const FB_WCHAR *src, ssize_t chars, char *dst, ssize_t *b
 	{
 		if( dst == NULL )
 		{
-			dst = malloc( chars * sizeof( UTF_16 ) );
+			dst = FBCAST(dst) malloc( chars * sizeof( UTF_16 ) );
 			if( dst == NULL )
 				return NULL;
 		}
@@ -248,7 +248,7 @@ static char *hToUTF32( const FB_WCHAR *src, ssize_t chars, char *dst, ssize_t *b
 	{
 		if( dst == NULL )
 		{
-			dst = malloc( chars * sizeof( UTF_32 ) );
+			dst = FBCAST(dst) malloc( chars * sizeof( UTF_32 ) );
 			if( dst == NULL )
 				return NULL;
 		}

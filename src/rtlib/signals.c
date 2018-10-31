@@ -9,7 +9,7 @@
 static LPTOP_LEVEL_EXCEPTION_FILTER old_excpfilter;
 
 /* low-level signal handler for Windows */
-static __stdcall LONG exception_filter( LPEXCEPTION_POINTERS info )
+static LONG __stdcall exception_filter( LPEXCEPTION_POINTERS info )
 {
 
 	switch( info->ExceptionRecord->ExceptionCode )

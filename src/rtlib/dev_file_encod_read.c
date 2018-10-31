@@ -21,8 +21,8 @@ int fb_DevFileReadEncod( FB_FILE *handle, void *dst, size_t *max_chars )
         return fb_ErrorSetNum( FB_RTERROR_ILLEGALFUNCTIONCALL );
     }
 
-    /* do read */
-    chars = fb_hFileRead_UTFToChar( fp, handle->encod, dst, chars );
+	/* do read */
+	chars = fb_hFileRead_UTFToChar( fp, handle->encod, (char*)dst, chars );
 
     /* fill with nulls if at eof */
     if( chars != *max_chars )

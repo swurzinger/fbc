@@ -11,7 +11,7 @@ int fb_DevPipeClose( FB_FILE *handle )
 
 	fp = (FILE*) handle->opaque;
 	if( fp != NULL ) {
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 		_pclose( fp );
 #else
 		pclose( fp );

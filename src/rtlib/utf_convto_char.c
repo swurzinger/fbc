@@ -52,7 +52,7 @@ char *fb_hUTF8ToChar( const UTF_8 *src, char *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = realloc( buffer, dst_size );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -138,7 +138,7 @@ char *fb_hUTF16ToChar( const UTF_16 *src, char *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = realloc( buffer, dst_size );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -199,7 +199,7 @@ char *fb_hUTF32ToChar( const UTF_32 *src, char *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = realloc( buffer, dst_size );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -241,13 +241,13 @@ char *fb_UTFToChar( FB_FILE_ENCOD encod, const void *src, char *dst, ssize_t *ch
 	switch( encod )
 	{
 	case FB_FILE_ENCOD_UTF8:
-		return fb_hUTF8ToChar( src, dst, chars );
+		return fb_hUTF8ToChar( (const UTF_8*)src, dst, chars );
 
 	case FB_FILE_ENCOD_UTF16:
-		return fb_hUTF16ToChar( src, dst, chars );
+		return fb_hUTF16ToChar( (const UTF_16*)src, dst, chars );
 
 	case FB_FILE_ENCOD_UTF32:
-		return fb_hUTF32ToChar( src, dst, chars );
+		return fb_hUTF32ToChar( (const UTF_32*)src, dst, chars );
 
 	default:
 		return NULL;

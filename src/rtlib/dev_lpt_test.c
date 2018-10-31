@@ -30,7 +30,7 @@ int fb_DevLptParseProtocol
 	if( lpt_proto_out == NULL )
 		return FALSE;
 
-	*lpt_proto_out = calloc( sizeof( DEV_LPT_PROTOCOL ) + proto_raw_len + 2, 1 );
+	*lpt_proto_out = (DEV_LPT_PROTOCOL*)calloc( sizeof( DEV_LPT_PROTOCOL ) + proto_raw_len + 2, 1 );
 	lpt_proto = *lpt_proto_out;
 
 	if( lpt_proto == NULL )

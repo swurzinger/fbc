@@ -18,9 +18,9 @@ int fb_DevFileWriteWstr( FB_FILE *handle, const FB_WCHAR* src, size_t chars )
 	}
 
 	if( chars < FB_LOCALBUFF_MAXLEN )
-		buffer = alloca( chars + 1 );
+		buffer = FBCAST(buffer) alloca( chars + 1 );
 	else
-		buffer = malloc( chars + 1 );
+		buffer = FBCAST(buffer) malloc( chars + 1 );
 
 	/* convert to ascii, file should be opened with the ENCODING option
 	   to allow UTF characters to be written */

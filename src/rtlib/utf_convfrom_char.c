@@ -8,7 +8,7 @@ static char *hToUTF8( const char *src, ssize_t chars, char *dst, ssize_t *bytes 
 	{
 		if( dst == NULL )
 		{
-			dst = malloc( chars * 2 );
+			dst = FBCAST(dst) malloc( chars * 2 );
 			if( dst == NULL )
 				return NULL;
 		}
@@ -33,7 +33,7 @@ static char *hToUTF16( const char *src, ssize_t chars, char *dst, ssize_t *bytes
 	{
 		if( dst == NULL )
 		{
-			dst = malloc( chars * sizeof( UTF_16 ) );
+			dst = FBCAST(dst) malloc( chars * sizeof( UTF_16 ) );
 			if( dst == NULL )
 				return NULL;
 		}
@@ -61,7 +61,7 @@ static char *hToUTF32( const char *src, ssize_t chars, char *dst, ssize_t *bytes
 	{
 		if( dst == NULL )
 		{
-			dst = malloc( chars * sizeof( UTF_32 ) );
+			dst = FBCAST(dst) malloc( chars * sizeof( UTF_32 ) );
 			if( dst == NULL )
 				return NULL;
 		}

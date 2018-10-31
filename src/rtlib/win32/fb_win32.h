@@ -1,11 +1,16 @@
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 #include <malloc.h> /* for _alloca() */
 
 /* not MinGW-w64? It already has ssize_t instead of _ssize_t */
 #ifndef __MINGW64_VERSION_MAJOR
+#ifdef HOST_MSVC
+	#define ssize_t ptrdiff_t
+#else
 	/* for _ssize_t with MinGW.org toolchain under -D_NO_OLDNAMES */
 	#include <sys/types.h>
 	#define ssize_t _ssize_t
+#endif
+
 #endif
 
 /* These defines let us use the same code for all platforms while still mapping
@@ -17,8 +22,32 @@
 #define strdup(s) _strdup(s)
 #define strcasecmp(a, b) _stricmp(a, b)
 #define strncasecmp(a, b, n) _strnicmp(a, b, n)
+#ifndef alloca		//already defined in malloc.h on HOST_MSVC
 #define alloca(x) _alloca(x)
 #endif
+#endif
+
+/* fix MSVC non-standard stuff in old versions */
+#if _MSC_VER < 1800	/* pre MSVC++ 12.0 (Visual Studio 2013) */
+#define atoll _atoi64				
+#define strtoll _strtoi64		
+#define strtoull _strtoui64	
+#define wcstoll _wcstoi64		
+#define wcstoull _wcstoui64
+//#define strcasecmp _stricmp
+//#define strncasecmp _strnicmp
+//#define vsnprintf _vsnprintf
+#define rint( __value__ ) (floor( (__value__) + 0.5 ))
+#endif
+
+#ifdef HOST_MSVC
+/* fix GCC non-standard stuff */
+#define __builtin_floorf floorf
+#define __builtin_fabsf fabsf
+#define __builtin_floorl floorl
+#define __builtin_fabsl fabsl
+#endif
+
 
 #ifdef HOST_X86
 #define FBCALL __stdcall
@@ -44,6 +73,11 @@
 
 #ifdef HOST_CYGWIN
 typedef off_t fb_off_t;
+#elif defined(HOST_MSVC)
+typedef long long fb_off_t;
+#define fseeko _fseeki64
+#define ftello _ftelli64
+#define strtof( a, b ) ((float)strtod( a, b ))
 #else
 /* MinGW-w64 recognizes -D_FILE_OFFSET_BITS=64, but MinGW does not, so we
    can't be sure that ftello() really maps to the 64bit version...

@@ -11,9 +11,9 @@ FBCALL void fb_WriteWstr( int fnum, FB_WCHAR *s, int mask )
 	if( s == NULL )
 	{
 		if( mask & FB_PRINT_BIN_NEWLINE )
-			fb_hFilePrintBufferWstrEx( handle, _LC("\"\"" FB_BINARY_NEWLINE), 1+1+sizeof(FB_BINARY_NEWLINE)-1 );
+			fb_hFilePrintBufferWstrEx( handle, _LC("\"\"") _LC(FB_NEWLINE), 1+1+sizeof(FB_BINARY_NEWLINE)-1 );
 		else if( mask & FB_PRINT_NEWLINE )
-			fb_hFilePrintBufferWstrEx( handle, _LC("\"\"" FB_NEWLINE), 1+1+sizeof(FB_NEWLINE)-1 );
+			fb_hFilePrintBufferWstrEx( handle, _LC("\"\"") _LC(FB_NEWLINE), 1+1+sizeof(FB_NEWLINE)-1 );
 		else
 			fb_hFilePrintBufferWstrEx( handle, _LC("\"\","), 1+1+1 );
 		return;
@@ -22,13 +22,13 @@ FBCALL void fb_WriteWstr( int fnum, FB_WCHAR *s, int mask )
     /* close quote + new-line or comma */
     if( mask & FB_PRINT_BIN_NEWLINE )
     {
-		buff = _LC("\"" FB_BINARY_NEWLINE);
-		bufflen = fb_wstr_Len( _LC("\"" FB_BINARY_NEWLINE) );
+		buff = _LC("\"") _LC(FB_BINARY_NEWLINE);
+		bufflen = fb_wstr_Len( _LC("\"") _LC(FB_BINARY_NEWLINE) );
 	}
     else if( mask & FB_PRINT_NEWLINE )
     {
-		buff = _LC("\"" FB_NEWLINE);
-		bufflen = fb_wstr_Len( _LC("\"" FB_NEWLINE) );
+		buff = _LC("\"") _LC(FB_NEWLINE);
+		bufflen = fb_wstr_Len( _LC("\"") _LC(FB_NEWLINE) );
 	}
     else
     {

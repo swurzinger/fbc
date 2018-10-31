@@ -1,7 +1,7 @@
 /* rmdir function */
 
 #include "fb.h"
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 #include <direct.h>
 #else
 #include <unistd.h>
@@ -12,7 +12,7 @@ FBCALL int fb_RmDir( FBSTRING *path )
 {
 	int res;
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 	res = _rmdir( path->data );
 #else
 	res = rmdir( path->data );

@@ -228,6 +228,7 @@ FBCALL void fb_Randomize ( double seed, int algorithm )
 		break;
 
 	case RND_QB:
+		{  //prevent C2360/C2361 on MSVC
 		rnd_func = hRnd_QB;
 		dtoi.d = seed;
 		uint32_t s = dtoi.i[1];
@@ -235,6 +236,8 @@ FBCALL void fb_Randomize ( double seed, int algorithm )
 		s = ( ( s & 0xFFFF ) << 8 ) | ( iseed & 0xFF );
 		iseed = s;
 		break;
+		}
+
 
 #if defined HOST_WIN32 || defined HOST_LINUX
 	case RND_REAL:

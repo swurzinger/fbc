@@ -79,6 +79,10 @@ typedef uint8_t  UTF_8;
 #	include <wchar.h>
 #	include <wctype.h>
 #	define FB_WCHAR wchar_t
+#ifdef HOST_MSVC
+#	define _LC2(c) L ## c
+#	define _LC(c) _LC2(c)
+#else
 #	define _LC(c) L ## c
 #	define FB_WEOF ((FB_WCHAR)WEOF)
 #endif
@@ -232,9 +236,12 @@ static __inline__ const FB_WCHAR *fb_wstr_SkipCharRev( const FB_WCHAR *s, ssize_
 	return p;
 }
 
+/* see http://www.cplusplus.com/reference/cwchar/wcsstr/
+ * wcsstr returns a "const wchar_t*", no "wchar_t*" for two const wchar_t* arguments
+ */
 static __inline__ FB_WCHAR *fb_wstr_Instr( const FB_WCHAR *s, const FB_WCHAR *patt )
 {
-	return wcsstr( s, patt );
+	return (FB_WCHAR*)wcsstr( s, patt );
 }
 
 static __inline__ size_t fb_wstr_InstrAny( const FB_WCHAR *s, const FB_WCHAR *sset )

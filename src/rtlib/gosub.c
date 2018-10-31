@@ -30,7 +30,7 @@ typedef struct {
 /*:::::*/
 FBCALL void * fb_GosubPush( GOSUBCTX * ctx )
 {
-	GOSUBNODE *node = malloc( sizeof( GOSUBNODE ) );
+	GOSUBNODE *node = (GOSUBNODE *) malloc( sizeof( GOSUBNODE ) );
 	node->next = ctx->top;
 	ctx->top = node;
 

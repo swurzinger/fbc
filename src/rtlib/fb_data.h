@@ -1,3 +1,4 @@
+FBPACK(
 struct _FB_DATADESC {
 	short 					len;
 	union {
@@ -6,7 +7,8 @@ struct _FB_DATADESC {
 		void   				*ofs;
 		struct _FB_DATADESC *next;
 	};
-} FBPACKED;
+};
+)
 
 typedef struct _FB_DATADESC FB_DATADESC;
 

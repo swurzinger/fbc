@@ -59,7 +59,7 @@ static FB_WCHAR *hUTF8ToUTF16( const UTF_8 *src, FB_WCHAR *dst, ssize_t *chars )
 				charsleft = 8;
 				dst_size += charsleft;
 
-				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 
@@ -179,7 +179,7 @@ static FB_WCHAR *hUTF8ToUTF32( const UTF_8 *src, FB_WCHAR *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -305,7 +305,7 @@ static FB_WCHAR *hUTF16ToUTF32( const UTF_16 *src, FB_WCHAR *dst, ssize_t *chars
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -388,7 +388,7 @@ static FB_WCHAR *hUTF32ToUTF16( const UTF_32 *src, FB_WCHAR *dst, ssize_t *chars
 				/* Make room for some chars */
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -494,13 +494,13 @@ FB_WCHAR *fb_UTFToWChar( FB_FILE_ENCOD encod, const void *src, FB_WCHAR *dst, ss
 	switch( encod )
 	{
 	case FB_FILE_ENCOD_UTF8:
-		return hUTF8ToWChar( src, dst, chars );
+		return hUTF8ToWChar( (const UTF_8*) src, dst, chars );
 
 	case FB_FILE_ENCOD_UTF16:
-		return hUTF16ToWChar( src, dst, chars );
+		return hUTF16ToWChar( (const UTF_16*)src, dst, chars );
 
 	case FB_FILE_ENCOD_UTF32:
-		return hUTF32ToWChar( src, dst, chars );
+		return hUTF32ToWChar( (const UTF_32*)src, dst, chars );
 
 	default:
 		return NULL;

@@ -93,7 +93,7 @@ static int fb_hFileLineInputEx
             /* destine is a var-len string? read directly */
             if( dst_len == -1 )
             {
-            	handle->hooks->pfnReadLine( handle, dst );
+            	handle->hooks->pfnReadLine( (_FB_FILE*)handle, (FBSTRING*)dst );
             }
             /* fixed-len or unknown size (ie: pointers)? use a temp var-len */
             else

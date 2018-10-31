@@ -2,6 +2,11 @@
 
 #include "fb.h"
 
+#ifdef HOST_MSVC
+#include <math.h>
+#endif
+
+
 /*:::::*/
 FBCALL float fb_FIXSingle( float x )
 {

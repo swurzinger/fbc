@@ -28,9 +28,9 @@ int fb_DevFileReadWstr( FB_FILE *handle, FB_WCHAR *dst, size_t *pchars )
     chars = *pchars;
 
 	if( chars < FB_LOCALBUFF_MAXLEN )
-		buffer = alloca( chars + 1 );
+		buffer = FBCAST(buffer) alloca( chars + 1 );
 	else
-		buffer = malloc( chars + 1 );
+		buffer = FBCAST(buffer) malloc( chars + 1 );
 
 	/* do read */
 	chars = fread( buffer, 1, chars, fp );

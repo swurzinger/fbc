@@ -36,7 +36,7 @@ static char *fb_DevLptMakeDeviceName( DEV_LPT_PROTOCOL *lpt_proto )
 {
 	if( lpt_proto )
 	{
-		char * p = calloc( strlen(lpt_proto->proto) + strlen(lpt_proto->name) + 3, 1 );
+		char * p = (char*)calloc( strlen(lpt_proto->proto) + strlen(lpt_proto->name) + 3, 1 );
 		strcpy( p, lpt_proto->proto );
 		strcat( p, ":" );
 		strcat( p, lpt_proto->name );

@@ -77,7 +77,7 @@ int fb_DevPipeOpen( FB_FILE *handle, const char *filename, size_t filename_len )
     if( res == FB_RTERROR_OK )
     {
         /* try to open/create pipe */
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
         if( (fp = _popen( filename, openmask )) == NULL )
 #else
         if( (fp = popen( filename, openmask )) == NULL )
