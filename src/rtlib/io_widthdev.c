@@ -56,7 +56,7 @@ FBCALL int fb_WidthDev( FBSTRING *dev, int width )
 
     /* create list of device info nodes (if not created yet) */
     if( dev_info_widths==NULL ) {
-        dev_info_widths = FBCAST(dev_info_widths) malloc( sizeof(FB_LIST) );
+        dev_info_widths = malloc( sizeof(FB_LIST) );
         fb_hListDevInit( dev_info_widths );
     }
 
@@ -64,7 +64,7 @@ FBCALL int fb_WidthDev( FBSTRING *dev, int width )
 
     /* */
     size = FB_STRSIZE(dev);
-    device = FBCAST(device) alloca(size + 1);
+    device = alloca(size + 1);
     memcpy( device, dev->data, size );
     device[size] = 0;
 

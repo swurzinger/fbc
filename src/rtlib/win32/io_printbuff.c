@@ -258,5 +258,5 @@ void fb_ConsolePrintBufferEx( const void *buffer, size_t len, int mask )
 
 void fb_ConsolePrintBuffer( const char *buffer, int mask )
 {
-    return fb_ConsolePrintBufferEx( buffer, strlen(buffer), mask );
+    fb_ConsolePrintBufferEx( buffer, strlen(buffer), mask );
 }

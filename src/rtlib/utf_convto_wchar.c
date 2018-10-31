@@ -59,7 +59,7 @@ static FB_WCHAR *hUTF8ToUTF16( const UTF_8 *src, FB_WCHAR *dst, ssize_t *chars )
 				charsleft = 8;
 				dst_size += charsleft;
 
-				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 
@@ -179,7 +179,7 @@ static FB_WCHAR *hUTF8ToUTF32( const UTF_8 *src, FB_WCHAR *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -305,7 +305,7 @@ static FB_WCHAR *hUTF16ToUTF32( const UTF_16 *src, FB_WCHAR *dst, ssize_t *chars
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -388,7 +388,7 @@ static FB_WCHAR *hUTF32ToUTF16( const UTF_32 *src, FB_WCHAR *dst, ssize_t *chars
 				/* Make room for some chars */
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = FBCAST(buffer) realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
+				buffer = realloc( buffer, dst_size * sizeof( FB_WCHAR ) );
 				dst = buffer + dst_size - charsleft;
 			}
 			

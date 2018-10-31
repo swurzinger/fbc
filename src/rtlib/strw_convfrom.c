@@ -50,7 +50,7 @@ FBCALL double fb_WstrToDouble( const FB_WCHAR *src, ssize_t len )
 	 * non-win32 platforms, so create a temporary buffer and replace any 
 	 * 'd's with 'e'
 	 */
-	q = FBCAST(q) malloc( (len + 1) * sizeof(FB_WCHAR) );
+	q = malloc( (len + 1) * sizeof(FB_WCHAR) );
 	for( i = 0; i < len; i++ )
 	{
 		c = p[i];

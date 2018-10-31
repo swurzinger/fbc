@@ -16,12 +16,7 @@
 #elif defined _MSC_VER
 	#define HOST_WIN32
 	#define HOST_MSVC
-	/* We prefer using non-oldnames functions, see also win32/fb_win32.h */
-	#define NO_OLDNAMES
-	#define _NO_OLDNAMES
-	/* Tell windows.h to omit many headers we don't need */
 	#define WIN32_LEAN_AND_MEAN
-//#define HOST_X86
 #elif defined __CYGWIN__
 	#define HOST_CYGWIN
 	#define HOST_WIN32
@@ -53,9 +48,9 @@
 	#define _FILE_OFFSET_BITS 64
 #endif
 
-#if defined __i386__
+#if defined __i386__ || defined(_M_IX86)
 	#define HOST_X86
-#elif defined __x86_64__
+#elif defined __x86_64__ || defined(_M_X64)
 	#define HOST_X86_64
 	#define HOST_64BIT
 #elif defined __sparc__
@@ -64,7 +59,7 @@
 	#endif
 #elif defined __ppc64__
 	#define HOST_64BIT
-#elif defined __aarch64__
+#elif defined __aarch64__ || defined(_M_ARM64)
 	#define HOST_64BIT
 #endif
 
@@ -86,6 +81,8 @@
 #if defined HOST_MSVC
 /* fix UNIX non-standard stuff */
 #define __inline__ __inline
+// hide ms-specific crt-secure warnings
+#define _CRT_SECURE_NO_WARNINGS
 
 #if 0
 	#define ssize_t ptrdiff_t
@@ -107,8 +104,6 @@
 #endif
 
 	#define FBPACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
-	#define FBCAST( __Expression__ ) ( decltype( __Expression__ ) )
 #else
 	#define FBPACK( __Declaration__ ) __Declaration__ FBPACKED
-	#define FBCAST( __Expression__ ) 
 #endif

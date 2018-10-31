@@ -4,7 +4,7 @@
 #include <io.h>
 #include <windows.h>
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 	#define fileno _fileno
 	#define get_osfhandle _get_osfhandle
 #endif

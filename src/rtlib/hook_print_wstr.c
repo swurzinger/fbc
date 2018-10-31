@@ -20,6 +20,6 @@ FBCALL void fb_PrintBufferWstrEx( const FB_WCHAR *buffer, size_t len, int mask )
 FBCALL void fb_PrintBufferWstr( const FB_WCHAR *buffer, int mask )
 {
 
-    return fb_PrintBufferWstrEx( buffer, fb_wstr_Len( buffer ), mask );
+    fb_PrintBufferWstrEx( buffer, fb_wstr_Len( buffer ), mask );
 
 }

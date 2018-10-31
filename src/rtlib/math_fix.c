@@ -4,6 +4,11 @@
 
 #ifdef HOST_MSVC
 #include <math.h>
+#pragma intrinsic(floorf, fabsf, floor, fabs)
+#define __builtin_floorf floorf
+#define __builtin_fabsf fabsf
+#define __builtin_floor floor
+#define __builtin_fabs fabs
 #endif
 
 

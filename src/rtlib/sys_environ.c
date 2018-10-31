@@ -43,7 +43,7 @@ FBCALL int fb_SetEnviron ( FBSTRING *str )
 
 	if( (str != NULL) && (str->data != NULL) )
 	{
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 		res = _putenv( str->data );
 #else
 		res = putenv( str->data );

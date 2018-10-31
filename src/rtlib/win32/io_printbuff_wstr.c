@@ -273,5 +273,5 @@ void fb_ConsolePrintBufferWstr
 		int mask
 	)
 {
-    return fb_ConsolePrintBufferWstrEx( buffer, fb_wstr_Len( buffer ), mask );
+    fb_ConsolePrintBufferWstrEx( buffer, fb_wstr_Len( buffer ), mask );
 }

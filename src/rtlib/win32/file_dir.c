@@ -1,7 +1,7 @@
 /* dir() */
 
 #include "../fb.h"
-#ifndef HOST_CYGWIN
+#ifdef HOST_MINGW
 	#include <direct.h>
 #endif
 #include <windows.h>
@@ -9,12 +9,12 @@
 typedef struct {
 	int in_use;
 	int attrib;
-#ifdef HOST_CYGWIN
-	WIN32_FIND_DATA data;
-	HANDLE handle;
-#else
+#ifdef HOST_MINGW
 	struct _finddata_t data;
 	long handle;
+#else
+	WIN32_FIND_DATA data;
+	HANDLE handle;
 #endif
 } FB_DIRCTX;
 

@@ -203,7 +203,7 @@ int fb_DevComOpen( FB_FILE *handle, const char *filename, size_t filename_len )
 
         /* copy option to temporary buffer */
         uiOptionLength = pchPosEnd - pchPos;
-        pszOption = FBCAST(pszOption) malloc( uiOptionLength + 1 );
+        pszOption = malloc( uiOptionLength + 1 );
         memcpy( pszOption, pchPos, uiOptionLength );
         pszOption[uiOptionLength] = 0;
 

@@ -602,7 +602,7 @@ static void EmuPrint_RAW( W32_PRINTER_INFO *pInfo,
 				if( !isunicode )
 				{
 					char ch = *(char *)pText;
-					pText += sizeof(char);
+					(char*)pText += sizeof(char);
 
 					EmuPageStart( pInfo );
           TextOut( pInfo->hDc,
@@ -610,7 +610,7 @@ static void EmuPrint_RAW( W32_PRINTER_INFO *pInfo,
                  &ch, 1 );
 				} else {
 					FB_WCHAR ch = *(FB_WCHAR *)pText;
-					pText += sizeof(FB_WCHAR);
+					(char*)pText += sizeof(FB_WCHAR);
 
 
 					EmuPageStart( pInfo );
@@ -740,19 +740,19 @@ static void EmuPrint_TTY( W32_PRINTER_INFO *pInfo,
 									break;
 							}
 					}
-					pText += uiLengthTTY * sizeof(char);
+					(char*)pText += uiLengthTTY * sizeof(char);
 					uiLength -= uiLengthTTY;
 			}
 
 		} else {
 
 			while( uiLength!=0 ) {
-					char chControl = 0;
+					FB_WCHAR chControl = 0;
 					unsigned uiLengthTTY = uiLength, ui;
 					/* Check for additional control characters */
 					for( ui=0; ui!=uiLength; ++ui ) {
 							int iFound = FALSE;
-							char ch = ((FB_WCHAR *)pText)[ui];
+							FB_WCHAR ch = ((FB_WCHAR *)pText)[ui];
 							switch( ch ) {
 							case 12:
 									/* FormFeed */
@@ -780,7 +780,7 @@ static void EmuPrint_TTY( W32_PRINTER_INFO *pInfo,
 									break;
 							}
 					}
-					pText += uiLengthTTY * sizeof(FB_WCHAR);
+					(char*)pText += uiLengthTTY * sizeof(FB_WCHAR);
 					uiLength -= uiLengthTTY;
 			}
 

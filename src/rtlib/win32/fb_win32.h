@@ -40,15 +40,6 @@
 #define rint( __value__ ) (floor( (__value__) + 0.5 ))
 #endif
 
-#ifdef HOST_MSVC
-/* fix GCC non-standard stuff */
-#define __builtin_floorf floorf
-#define __builtin_fabsf fabsf
-#define __builtin_floorl floorl
-#define __builtin_fabsl fabsl
-#endif
-
-
 #ifdef HOST_X86
 #define FBCALL __stdcall
 #else

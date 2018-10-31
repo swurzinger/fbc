@@ -52,7 +52,7 @@ char *fb_hUTF8ToChar( const UTF_8 *src, char *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = FBCAST(buffer) realloc( buffer, dst_size );
+				buffer = realloc( buffer, dst_size );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -138,7 +138,7 @@ char *fb_hUTF16ToChar( const UTF_16 *src, char *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = FBCAST(buffer) realloc( buffer, dst_size );
+				buffer = realloc( buffer, dst_size );
 				dst = buffer + dst_size - charsleft;
 			}
 			
@@ -199,7 +199,7 @@ char *fb_hUTF32ToChar( const UTF_32 *src, char *dst, ssize_t *chars )
 			{
 				charsleft = 8;
 				dst_size += charsleft;
-				buffer = FBCAST(buffer) realloc( buffer, dst_size );
+				buffer = realloc( buffer, dst_size );
 				dst = buffer + dst_size - charsleft;
 			}
 			

@@ -54,7 +54,7 @@ FBCALL double fb_hStr2Double( char *src, ssize_t len )
 	 * 'd's with 'e'.
 	 * This would be bad for hex strings, but those should be handled above already.
 	 */
-	q = FBCAST(q) malloc( len + 1 );
+	q = malloc( len + 1 );
 	for( i = 0; i < len; i++ )
 	{
 		c = p[i];

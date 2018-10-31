@@ -84,6 +84,7 @@ typedef uint8_t  UTF_8;
 #	define _LC(c) _LC2(c)
 #else
 #	define _LC(c) L ## c
+#endif
 #	define FB_WEOF ((FB_WCHAR)WEOF)
 #endif
 
