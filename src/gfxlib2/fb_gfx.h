@@ -165,6 +165,7 @@ typedef struct _GFX_CHAR_CELL {
     unsigned fg, bg;
 } GFX_CHAR_CELL;
 
+FBPACK(
 struct _EVENT {
 	int type;
 	union {
@@ -173,14 +174,17 @@ struct _EVENT {
 			int ascii;
 		};
 		struct {			/* mouse events */
-			int x, y;
-			int dx, dy;
+			int x;
+			int y;
+			int dx;
+			int dy;
 		};
 		int button;
 		int z;
 		int w;
 	};
-} FBPACKED;
+}
+);
 
 typedef struct _EVENT EVENT;
 
@@ -384,6 +388,7 @@ typedef struct FONT
 	const unsigned char *data;
 } FONT;
 
+FBPACK(
 struct _PUT_HEADER {
 	union {
 		struct {
@@ -400,7 +405,8 @@ struct _PUT_HEADER {
 	unsigned int tex;
 	char _reserved[8];
 	unsigned char data[0];
-} FBPACKED;
+}
+);
 typedef struct _PUT_HEADER PUT_HEADER;
 
 /* Global variables */

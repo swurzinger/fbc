@@ -7,8 +7,8 @@ struct _FB_DATADESC {
 		void   				*ofs;
 		struct _FB_DATADESC *next;
 	};
-};
-)
+}
+);
 
 typedef struct _FB_DATADESC FB_DATADESC;
 

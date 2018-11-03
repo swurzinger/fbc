@@ -17,6 +17,8 @@
 	#define HOST_WIN32
 	#define HOST_MSVC
 	#define WIN32_LEAN_AND_MEAN
+	// hide ms-specific crt-secure warnings
+	#define _CRT_SECURE_NO_WARNINGS
 #elif defined __CYGWIN__
 	#define HOST_CYGWIN
 	#define HOST_WIN32
@@ -79,30 +81,7 @@
 #endif
 
 #if defined HOST_MSVC
-/* fix UNIX non-standard stuff */
-#define __inline__ __inline
-// hide ms-specific crt-secure warnings
-#define _CRT_SECURE_NO_WARNINGS
-
-#if 0
-	#define ssize_t ptrdiff_t
-	#define alloca _alloca
-
-	/* fix MSVC non-standard stuff in old versions */
-	#if _MSC_VER < 1800	/* pre MSVC++ 12.0 (Visual Studio 2013) */
-		#define atoll _atoi64				
-		#define strtoll _strtoi64		
-		#define strtoull _strtoui64	
-		#define wcstoll _wcstoi64		
-		#define wcstoull _wcstoui64
-		#define strcasecmp _stricmp
-		#define strncasecmp _strnicmp
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#define rint( __value__ ) (floor( (__value__) + 0.5 ))
-	#endif
-#endif
-
+	#define __inline__ __inline
 	#define FBPACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
 #else
 	#define FBPACK( __Declaration__ ) __Declaration__ FBPACKED
