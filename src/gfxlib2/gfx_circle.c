@@ -38,7 +38,11 @@ static void draw_ellipse
 {
 	int d, x1, y1, x2, y2;
 	long long dx, dy, aq, bq, r, rx, ry;
+#ifdef HOST_MSVC
+	char* filled = alloca(sizeof(char) * ctx->view_h);
+#else
 	char filled[ctx->view_h];
+#endif
 
 	x1 = x - a;
 	x2 = x + a;

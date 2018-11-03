@@ -1,7 +1,6 @@
 #if defined HOST_UNIX || defined HOST_WIN32
 
 #ifdef HOST_WIN32
-	#include <windows.h>
 	typedef HANDLE FB_DYLIB;
 #else
 	typedef void *FB_DYLIB;

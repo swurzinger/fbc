@@ -6,7 +6,11 @@ void fb_GfxPrintBufferWstrEx(const FB_WCHAR *buffer, size_t len, int mask)
 {
 	/* Unicode gfx font support is out of the scope of gfxlib, convert to ascii */
 	
+#ifdef HOST_MSVC
+	char* temp = alloca(sizeof(char) * (len + 1));
+#else
 	char temp[len + 1];
+#endif
 
 	if( len > 0 )
 		fb_wstr_ConvToA( temp, len, buffer );

@@ -2,6 +2,12 @@
 
 #ifndef DISABLE_OPENGL
 
+#ifdef HOST_WIN32
+	#include <windows.h>
+	#if defined(HOST_MSVC)
+		#include "wingdi.h"
+	#endif
+#endif
 #ifdef HOST_DARWIN
 	#include <OpenGL/gl.h>
 	/* Mac GL headers don't define APIENTRY, so we do it manually */

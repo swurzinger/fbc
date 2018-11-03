@@ -54,7 +54,7 @@ static int gfx_get(void *target, float fx1, float fy1, float fx2, float fy2, uns
 	}
 
 	if( array != NULL ) {
-		if ((array->size > 0) && (((intptr_t)(dest + (pitch * h))) > ((intptr_t)(array->data + array->size)))) {
+		if ((array->size > 0) && (((intptr_t)(dest + (pitch * h))) > ((intptr_t)((char*)array->data + array->size)))) {
 			FB_GRAPHICS_UNLOCK( );
 			return fb_ErrorSetNum(FB_RTERROR_ILLEGALFUNCTIONCALL);
 		}

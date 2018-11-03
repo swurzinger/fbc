@@ -46,8 +46,10 @@ typedef struct {
 	int (*init)(void);
 	void (*exit)(void);
 	void (*paint)(void);
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW)
 	unsigned int WINAPI (*thread)( void *param );
+#elif defined(HOST_MSVC)
+	DWORD (WINAPI *thread)(LPVOID param);
 #else
 	DWORD WINAPI (*thread)( LPVOID param );
 #endif
