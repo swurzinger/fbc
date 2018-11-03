@@ -20,7 +20,7 @@ elseif(UNIX)
     set(TARGET_OS "solaris" CACHE LIST "Target operating system")
   endif()
 endif()
-set_property(CACHE TARGET_OS PROPERTY STRINGS "dos" "linux" "win32" "darwin" "cygwin" "freebsd" "openbsd" "netbsd" "solaris")
+set_property(CACHE TARGET_OS PROPERTY STRINGS "dos" "linux" "win32" "darwin" "cygwin" "freebsd" "openbsd" "netbsd" "solaris" "xbox")
 
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -36,6 +36,10 @@ if (NOT ENABLE_FFI)
   add_compile_definitions(DISABLE_FFI)
 endif()
 
+set(ENABLE_MT "YES" CACHE BOOL "Enable thread-safety")
+if (ENABLE_MT)
+  add_compile_definitions(ENABLE_MT)
+endif()
 
 
 add_library(rtlib)
@@ -678,6 +682,58 @@ elseif (TARGET_OS STREQUAL "solaris")
 list(APPEND sources_os
   solaris/sys_getexename.c
   solaris/sys_getexepath.c
+)
+elseif (TARGET_OS STREQUAL "xbox")
+list(APPEND sources_os
+  xbox/drv_intl_get.c
+  xbox/drv_intl_getdateformat.c
+  xbox/drv_intl_getmonthname.c
+  xbox/drv_intl_gettimeformat.c
+  xbox/drv_intl_getweekdayname.c
+  xbox/file_copy.c
+  xbox/file_dir.c
+  xbox/file_hlock.c
+  xbox/file_hreset.c
+  xbox/hinit.c
+  xbox/io_cls.c
+  xbox/io_color.c
+  xbox/io_getsize.c
+  xbox/io_getx.c
+  xbox/io_getxy.c
+  xbox/io_gety.c
+  xbox/io_inkey.c
+  xbox/io_isredir.c
+  xbox/io_locate.c
+  xbox/io_maxrow.c
+  xbox/io_mouse.c
+  xbox/io_multikey.c
+  xbox/io_pageset.c
+  xbox/io_pcopy.c
+  xbox/io_printbuff.c
+  xbox/io_printbuff_wstr.c
+  xbox/io_printer.c
+  xbox/io_readstr.c
+  xbox/io_readxy.c
+  xbox/io_scroll.c
+  xbox/io_serial.c
+  xbox/io_viewupdate.c
+  xbox/io_width.c
+  xbox/sys_beep.c
+  xbox/sys_delay.c
+  xbox/sys_dylib.c
+  xbox/sys_execex.c
+  xbox/sys_fmem.c
+  xbox/sys_getcwd.c
+  xbox/sys_getexename.c
+  xbox/sys_getexepath.c
+  xbox/sys_hshell.c
+  xbox/thread_cond.c
+  xbox/thread_core.c
+  xbox/thread_detach.c
+  xbox/thread_mutex.c
+  xbox/time_setdate.c
+  xbox/time_settime.c
+  xbox/time_timer.c
 )
 endif()
 
