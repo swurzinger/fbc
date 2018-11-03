@@ -5,7 +5,8 @@
 	#include <windows.h>
 #endif
 
-typedef struct BMP_HEADER
+FBPACK(
+struct BMP_HEADER
 {
 	unsigned short bfType;
 	unsigned int   bfSize;
@@ -23,7 +24,8 @@ typedef struct BMP_HEADER
 	unsigned int   biYPelsPerMeter;
 	unsigned int   biClrUsed;
 	unsigned int   biClrImportant;
-} FBPACKED BMP_HEADER;
+});
+typedef struct BMP_HEADER BMP_HEADER;
 
 static int save_bmp(FB_GFXCTX *ctx, FILE *f, void *src, void *pal, int outbpp)
 {
