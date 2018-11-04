@@ -220,23 +220,24 @@ target_sources(gfxlib2
     ${headers_priv}
     ${sources_os}
     ${sources_arch}
-  PUBLIC
+  #PUBLIC
     ${headers}
 )
+
 
 source_group(${TARGET_OS} FILES ${sources_os})
 source_group(${TARGET_ARCH} FILES ${sources_arch})
 
 
 
-##Set target properties
-#target_include_directories(gfxlib2
-#    PUBLIC
-#        $<INSTALL_INTERFACE:.>
-#        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-#    PRIVATE
-#        ${CMAKE_CURRENT_SOURCE_DIR}/.
-#)
+#Set target properties
+target_include_directories(gfxlib2
+    PUBLIC
+        $<INSTALL_INTERFACE:.>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/.
+)
 
 #target_compile_features(jsonutils PRIVATE cxx_auto_type)
 #target_compile_options(jsonutils PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>)

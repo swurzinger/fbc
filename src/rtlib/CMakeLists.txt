@@ -482,6 +482,9 @@ list(APPEND headers_priv
   con_print_tty_uni.h
   dev_com_private.h
   io_serial_private.h
+  fb_gfx_private.h
+  fb_private_hdynload.h
+  fb_private_thread.h
 )
 
 list(APPEND headers
@@ -494,15 +497,12 @@ list(APPEND headers
   fb_device.h
   fb_error.h
   fb_file.h
-  fb_gfx_private.h
   fb_hook.h
   fb_legacy.h
   fb_math.h
   fb_oop.h
   fb_print.h
   fb_printer.h
-  fb_private_hdynload.h
-  fb_private_thread.h
   fb_serial.h
   fb_string.h
   fb_system.h
@@ -798,23 +798,25 @@ target_sources(rtlib
     ${headers_priv}
     ${sources_os}
     ${sources_arch}
-  PUBLIC
+  #PUBLIC
     ${headers}
 )
+
+
 
 source_group(${TARGET_OS} FILES ${sources_os})
 source_group(${TARGET_ARCH} FILES ${sources_arch})
 
 
 
-##Set target properties
-#target_include_directories(rtlib
-#    PUBLIC
-#        $<INSTALL_INTERFACE:.>
-#        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
-#    PRIVATE
-#        ${CMAKE_CURRENT_SOURCE_DIR}/.
-#)
+#Set target properties
+target_include_directories(rtlib
+    PUBLIC
+        $<INSTALL_INTERFACE:.>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/.>
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/.
+)
 
 #target_compile_features(jsonutils PRIVATE cxx_auto_type)
 #target_compile_options(jsonutils PRIVATE $<$<CXX_COMPILER_ID:GNU>:-Wall>)
@@ -825,63 +827,64 @@ source_group(${TARGET_ARCH} FILES ${sources_arch})
 #    PRIVATE
 #        Boost::regex
 #)
-#
-###############################################
-## Installation instructions
-#
-#include(GNUInstallDirs)
-#set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/JSONUtils)
-#
-#install(TARGETS jsonutils
-#    EXPORT jsonutils-targets
-#    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-#)
-#
-##This is required so that the exported target has the name JSONUtils and not jsonutils
-#set_target_properties(jsonutils PROPERTIES EXPORT_NAME JSONUtils)
-#
+
+##############################################
+# Installation instructions
+
+include(GNUInstallDirs)
+set(INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/rtlib)
+
+install(TARGETS rtlib
+    EXPORT rtlib-targets
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+#This is required so that the exported target has the name JSONUtils and not jsonutils
+#set_target_properties(rtlib PROPERTIES EXPORT_NAME rtlib)
+
 #install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-#
-##Export the targets to a script
-#install(EXPORT jsonutils-targets
-#  FILE
-#    JSONUtilsTargets.cmake
-#  NAMESPACE
-#    JSONUtils::
-#  DESTINATION
-#    ${INSTALL_CONFIGDIR}
-#)
-#
-##Create a ConfigVersion.cmake file
-#include(CMakePackageConfigHelpers)
-#write_basic_package_version_file(
-#    ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfigVersion.cmake
-#    VERSION ${PROJECT_VERSION}
-#    COMPATIBILITY AnyNewerVersion
-#)
-#
-#configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/cmake/JSONUtilsConfig.cmake.in
-#    ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfig.cmake
-#    INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
-#)
-#
-##Install the config, configversion and custom find modules
-#install(FILES
-#    ${CMAKE_CURRENT_LIST_DIR}/cmake/FindRapidJSON.cmake
-#    ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfig.cmake
-#    ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsConfigVersion.cmake
-#    DESTINATION ${INSTALL_CONFIGDIR}
-#)
-#
-###############################################
-### Exporting from the build tree
-#configure_file(${CMAKE_CURRENT_LIST_DIR}/cmake/FindRapidJSON.cmake
-#    ${CMAKE_CURRENT_BINARY_DIR}/FindRapidJSON.cmake
+install(FILES ${headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+
+#Export the targets to a script
+install(EXPORT rtlib-targets
+  FILE
+    rtlibTargets.cmake
+  NAMESPACE
+    FreeBasic::
+  DESTINATION
+    ${INSTALL_CONFIGDIR}
+)
+
+#Create a ConfigVersion.cmake file
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/rtlibConfigVersion.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY AnyNewerVersion
+)
+
+configure_package_config_file(${CMAKE_CURRENT_LIST_DIR}/rtlibConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/rtlibConfig.cmake
+    INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+#Install the config, configversion and custom find modules
+install(FILES
+    #${CMAKE_CURRENT_LIST_DIR}/cmake/Findrtlib.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/rtlibConfig.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/rtlibConfigVersion.cmake
+    DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+##############################################
+## Exporting from the build tree
+#configure_file(${CMAKE_CURRENT_LIST_DIR}/cmake/Findrtlib.cmake
+#    ${CMAKE_CURRENT_BINARY_DIR}/Findrtlib.cmake
 #    COPYONLY)
-#
-#export(EXPORT jsonutils-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/JSONUtilsTargets.cmake NAMESPACE JSONUtils::)
-#
-##Register package in user's package registry
-#export(PACKAGE JSONUtils)
-#
+
+export(EXPORT rtlib-targets FILE ${CMAKE_CURRENT_BINARY_DIR}/rtlibTargets.cmake NAMESPACE FreeBasic::)
+
+#Register package in user's package registry
+export(PACKAGE rtlib)
+
