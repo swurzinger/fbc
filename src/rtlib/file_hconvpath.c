@@ -11,7 +11,7 @@ void fb_hConvertPath( char *path )
 	len = strlen( path );
 	for (i = 0; i < len; i++)
 	{
-#if defined( HOST_DOS ) || defined( HOST_MINGW ) || defined( HOST_XBOX )
+#if defined( HOST_DOS ) || defined( HOST_MINGW ) || defined( HOST_MSVC ) || defined( HOST_XBOX )
 		if( path[i] == '/' )
 			path[i] = '\\';
 #else

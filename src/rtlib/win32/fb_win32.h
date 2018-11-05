@@ -27,19 +27,6 @@
 #endif
 #endif
 
-/* fix MSVC non-standard stuff in old versions */
-#if _MSC_VER < 1800	/* pre MSVC++ 12.0 (Visual Studio 2013) */
-#define atoll _atoi64				
-#define strtoll _strtoi64		
-#define strtoull _strtoui64	
-#define wcstoll _wcstoi64		
-#define wcstoull _wcstoui64
-//#define strcasecmp _stricmp
-//#define strncasecmp _strnicmp
-//#define vsnprintf _vsnprintf
-#define rint( __value__ ) (floor( (__value__) + 0.5 ))
-#endif
-
 #ifdef HOST_X86
 #define FBCALL __stdcall
 #else

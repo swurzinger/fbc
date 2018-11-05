@@ -60,7 +60,8 @@ typedef uint8_t  UTF_8;
 #	include <wchar.h>
 #	include <wctype.h>
 #	define FB_WCHAR wchar_t
-#	define _LC(c) L ## c
+#	define _LC2(c) L ## c
+#	define _LC(c) _LC2(c)
 #	if defined HOST_MINGW
 #		define FB_WEOF ((FB_WCHAR)WEOF)
 #		define swprintf _snwprintf
@@ -79,12 +80,8 @@ typedef uint8_t  UTF_8;
 #	include <wchar.h>
 #	include <wctype.h>
 #	define FB_WCHAR wchar_t
-#ifdef HOST_MSVC
 #	define _LC2(c) L ## c
 #	define _LC(c) _LC2(c)
-#else
-#	define _LC(c) L ## c
-#endif
 #	define FB_WEOF ((FB_WCHAR)WEOF)
 #endif
 
