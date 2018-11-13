@@ -592,7 +592,7 @@ int fb_hWin32Init(char *title, int w, int h, int depth, int refresh_rate, int fl
 			return -1;
 		}
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 		/* Note: _beginthreadex()'s last parameter cannot be NULL,
 		   or else the function fails on Windows 9x */
 		unsigned int thrdaddr;

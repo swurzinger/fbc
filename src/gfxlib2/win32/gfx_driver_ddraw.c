@@ -412,7 +412,7 @@ static void directx_exit(void)
 	}
 }
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 static unsigned int WINAPI directx_thread( void *param )
 #else
 static DWORD WINAPI directx_thread( LPVOID param )

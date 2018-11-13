@@ -23,7 +23,7 @@ FB_CONSOLE_CTX __fb_con /* not initialized */;
 
 void fb_hInit( void )
 {
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 #ifndef _clear87
 /* if __STRICT_ANSI__ is defined the _controlfp function is not defined in some versions of mingw-gcc */
 #define	_PC_64		0x00000000

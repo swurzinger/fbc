@@ -5,7 +5,7 @@
 #include <process.h>
 
 /* thread proxy to user's thread proc */
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 static unsigned int WINAPI threadproc( void *param )
 #else
 static DWORD WINAPI threadproc( LPVOID param )
@@ -42,7 +42,7 @@ FBCALL FBTHREAD *fb_ThreadCreate( FB_THREADPROC proc, void *param, ssize_t stack
 	info->proc = proc;
 	info->param = param;
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 	/* Note: _beginthreadex()'s last parameter cannot be NULL,
 	   or else the function fails on Windows 9x */
 	unsigned int thrdaddr;

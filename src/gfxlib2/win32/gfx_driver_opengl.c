@@ -254,7 +254,7 @@ static void opengl_exit(void)
 	ShowWindow(fb_win32.wnd, SW_HIDE);
 }
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 static unsigned int WINAPI opengl_thread( void *param )
 #else
 static DWORD WINAPI opengl_thread( LPVOID param )
@@ -424,7 +424,7 @@ static int driver_init(char *title, int w, int h, int depth_arg, int refresh_rat
 	}
 	if (__fb_gl_params.mode_2d == DRIVER_OGL_2D_AUTO_SYNC){
 		fb_wgl.MakeCurrent(NULL, NULL);
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 		/* Note: _beginthreadex()'s last parameter cannot be NULL,
 		   or else the function fails on Windows 9x */
 		unsigned int thrdaddr;

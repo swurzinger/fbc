@@ -7,7 +7,7 @@ FBCALL int fb_ExecEx( FBSTRING *program, FBSTRING *args, int do_fork )
     char buffer[MAX_PATH+1], *arguments;
     int	res = 0, got_program;
     size_t len_arguments;
-#ifndef HOST_MINGW
+#if !defined(HOST_MINGW) && !defined(HOST_MSVC)
     size_t len_program;
 #endif
 
@@ -21,7 +21,7 @@ FBCALL int fb_ExecEx( FBSTRING *program, FBSTRING *args, int do_fork )
 
     fb_hGetShortPath( program->data, buffer, MAX_PATH );
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
     if( args==NULL ) {
         arguments = "";
     } else {
@@ -56,7 +56,7 @@ FBCALL int fb_ExecEx( FBSTRING *program, FBSTRING *args, int do_fork )
     FB_CON_CORRECT_POSITION();
 
 	{
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
         if( do_fork )
         	res = _spawnl( _P_WAIT, buffer, buffer, arguments, NULL );
         else

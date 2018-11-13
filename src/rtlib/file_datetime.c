@@ -6,7 +6,7 @@
 
 FBCALL double fb_FileDateTime( const char *filename )
 {
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 	struct _stat buf;
 	if( _stat( filename, &buf ) != 0 )
 #else

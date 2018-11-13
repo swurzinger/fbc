@@ -216,7 +216,7 @@ static void gdi_exit(void)
 		DeleteObject(palette);
 }
 
-#ifdef HOST_MINGW
+#if defined(HOST_MINGW) || defined(HOST_MSVC)
 static unsigned int WINAPI gdi_thread( void *param )
 #else
 static DWORD WINAPI gdi_thread( LPVOID param )
