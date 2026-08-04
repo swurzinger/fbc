@@ -1,0 +1,259 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  # Allow manual trigger
+  workflow_dispatch:
+
+env:
+  # Bootstrap fbc version used to compile the compiler
+  BOOTSTRAP_VERSION: "1.10.1"
+
+jobs:
+  # ===========================================================================
+  # Linux x86_64 build
+  # ===========================================================================
+  linux-x86_64:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Linux x86_64"
+            build_flags: ""
+            test_flags: ""
+          - name: "Linux x86_64 (debug)"
+            build_flags: "FBFLAGS += -g -exx\nCFLAGS += -g -DDEBUG"
+            test_flags: "-g -exx"
+
+    name: ${{ matrix.name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -y --no-install-recommends install \
+            gcc \
+            g++ \
+            make \
+            libncurses-dev \
+            libffi-dev \
+            libgl1-mesa-dev \
+            libglu1-mesa-dev \
+            libgpm-dev \
+            libx11-dev \
+            libxext-dev \
+            libxpm-dev \
+            libxrender-dev \
+            libxrandr-dev \
+            libcunit1-dev
+
+      - name: Cache bootstrap compiler
+        id: cache-bootstrap
+        uses: actions/cache@v4
+        with:
+          path: bootstrap
+          key: bootstrap-linux-x86_64-${{ env.BOOTSTRAP_VERSION }}
+
+      - name: Download and build bootstrap compiler
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+        run: |
+          BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
+          wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
+          tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
+          cd "${BOOTSTRAP_PACKAGE}"
+          make -j$(nproc) bootstrap
+          cd ..
+          mv "${BOOTSTRAP_PACKAGE}" bootstrap
+
+      - name: Build fbc (pass 1 - using bootstrap)
+        run: |
+          rm -f config.mk
+          printf '%s\n' 'CFLAGS += -Werror' > config.mk
+          printf '%s\n' '${{ matrix.build_flags }}' >> config.mk
+          make -j$(nproc) FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
+
+      - name: Rebuild fbc (pass 2 - self-host)
+        run: |
+          mv bin/fbc bin/fbc_pass1
+          make -j$(nproc) clean-compiler
+          make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
+          rm bin/fbc_pass1
+
+      - name: Run unit tests
+        run: |
+          FBC_FOR_TESTS="$PWD/bin/fbc -i $PWD/inc ${{ matrix.test_flags }}"
+          cd tests
+          make unit-tests FBC="$FBC_FOR_TESTS" </dev/null
+
+      - name: Run log tests
+        run: |
+          FBC_FOR_TESTS="$PWD/bin/fbc -i $PWD/inc ${{ matrix.test_flags }}"
+          cd tests
+          make log-tests FBC="$FBC_FOR_TESTS" </dev/null
+          if grep -r "RESULT=FAILED" failed-*.log 2>/dev/null; then
+            echo "::error::Some log tests failed"
+            grep "RESULT=FAILED" failed-*.log | while read ln; do
+              logfile="$(echo "$ln" | cut -d: -f2)"
+              echo "--- $logfile ---"
+              cat "$logfile"
+            done
+            exit 1
+          fi
+
+      - name: Run warning tests
+        run: |
+          FBC_FOR_TESTS="$PWD/bin/fbc -i $PWD/inc"
+          cd tests/warnings
+          FBC="$FBC_FOR_TESTS" ./test.sh </dev/null
+          cd ../..
+          git update-index -q --ignore-submodules --refresh
+          if ! git diff-files --quiet --ignore-submodules; then
+            echo "::error::Warning tests produced unexpected output changes"
+            git diff
+            exit 1
+          fi
+
+      - name: Run syntax tests
+        run: |
+          FBC_FOR_TESTS="$PWD/bin/fbc -i $PWD/inc"
+          cd tests/syntax
+          FBC="$FBC_FOR_TESTS" ./test.sh </dev/null
+          cd ../..
+          git update-index -q --ignore-submodules --refresh
+          if ! git diff-files --quiet --ignore-submodules; then
+            echo "::error::Syntax tests produced unexpected output changes"
+            git diff
+            exit 1
+          fi
+
+      - name: Upload fbc binary
+        if: success() && matrix.test_flags == ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: fbc-linux-x86_64
+          path: |
+            bin/fbc
+            lib/freebasic/linux-x86_64/
+            inc/
+
+  # ===========================================================================
+  # Windows builds (x86 and x64) using MSYS2 + MinGW-w64
+  # ===========================================================================
+  windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Windows x86 (32-bit)"
+            msystem: MINGW32
+            arch: i686
+            target_arch: ""
+            pkg_prefix: mingw-w64-i686
+            fbtarget: win32
+          - name: "Windows x64 (64-bit)"
+            msystem: MINGW64
+            arch: x86_64
+            target_arch: "x86_64"
+            pkg_prefix: mingw-w64-x86_64
+            fbtarget: win64
+
+    name: ${{ matrix.name }}
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: false
+          install: >-
+            make
+            tar
+            xz
+            ${{ matrix.pkg_prefix }}-gcc
+            ${{ matrix.pkg_prefix }}-binutils
+            ${{ matrix.pkg_prefix }}-cunit
+
+      - name: Cache bootstrap compiler
+        id: cache-bootstrap
+        uses: actions/cache@v4
+        with:
+          path: bootstrap
+          key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}
+
+      - name: Download and build bootstrap compiler
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+        run: |
+          BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
+          curl -sL "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz" -o "${BOOTSTRAP_PACKAGE}.tar.xz"
+          tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
+          cd "${BOOTSTRAP_PACKAGE}"
+          echo "ENABLE_STANDALONE := 1" > config.mk
+          if [ "${{ matrix.fbtarget }}" = "win64" ]; then
+            echo "TARGET_ARCH := x86_64" >> config.mk
+          fi
+          make -j$(nproc) bootstrap
+          cd ..
+          mv "${BOOTSTRAP_PACKAGE}" bootstrap
+
+      - name: Build fbc (pass 1 - using bootstrap)
+        run: |
+          rm -f config.mk
+          echo "ENABLE_STANDALONE := 1" > config.mk
+          echo "CFLAGS += -Werror" >> config.mk
+          if [ "${{ matrix.fbtarget }}" = "win64" ]; then
+            echo "TARGET_ARCH := x86_64" >> config.mk
+          fi
+          make -j$(nproc) FBC="bootstrap/fbc -i bootstrap/inc" </dev/null
+
+      - name: Rebuild fbc (pass 2 - self-host)
+        run: |
+          mv fbc.exe fbc_pass1.exe
+          make -j$(nproc) clean-compiler
+          make -j$(nproc) compiler FBC='./fbc_pass1 -i inc' </dev/null
+          rm -f fbc_pass1.exe
+
+      - name: Run unit tests
+        run: |
+          FBC_FOR_TESTS="$(pwd)/fbc -i $(pwd)/inc"
+          cd tests
+          make unit-tests FBC="$FBC_FOR_TESTS" </dev/null
+
+      - name: Run log tests
+        run: |
+          FBC_FOR_TESTS="$(pwd)/fbc -i $(pwd)/inc"
+          cd tests
+          make log-tests FBC="$FBC_FOR_TESTS" </dev/null
+          if grep -r "RESULT=FAILED" failed-*.log 2>/dev/null; then
+            echo "::error::Some log tests failed"
+            grep "RESULT=FAILED" failed-*.log | while read ln; do
+              logfile="$(echo "$ln" | cut -d: -f2)"
+              echo "--- $logfile ---"
+              cat "$logfile"
+            done
+            exit 1
+          fi
+
+      - name: Upload fbc binary
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fbc-${{ matrix.fbtarget }}
+          path: |
+            fbc.exe
+            lib/${{ matrix.fbtarget }}/
+            inc/
