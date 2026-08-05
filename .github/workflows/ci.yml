@@ -107,6 +107,7 @@ jobs:
 
       - name: Populate standalone toolchain dirs
         run: |
+          set -x
           FBTARGET="${{ matrix.fbtarget }}"
           MINGW_PREFIX="$(dirname $(which gcc))/.."
 
@@ -124,24 +125,11 @@ jobs:
           fi
           echo "GCC_LIBDIR=$GCC_LIBDIR"
 
-          # Locate CRT objects - they can be in different places depending on gcc version
-          SYSROOT="$MINGW_PREFIX/$GCC_TARGET/lib"
-          if [ ! -f "$SYSROOT/crt2.o" ]; then
-            # Try the gcc lib directory
-            SYSROOT="$GCC_LIBDIR"
-          fi
-          if [ ! -f "$SYSROOT/crt2.o" ]; then
-            # Ask gcc directly where it looks
-            SYSROOT=$(gcc -print-file-name=crt2.o | sed 's|/crt2\.o$||')
-          fi
-          echo "SYSROOT (for CRT objects)=$SYSROOT"
-
-          # Locate import libraries
-          LIBDIR="$MINGW_PREFIX/$GCC_TARGET/lib"
-          if [ ! -f "$LIBDIR/libkernel32.a" ]; then
-            LIBDIR=$(gcc -print-file-name=libkernel32.a | sed 's|/libkernel32\.a$||')
-          fi
-          echo "LIBDIR (for import libs)=$LIBDIR"
+          # Use gcc -print-file-name to locate files reliably
+          crt2_path="$(gcc -print-file-name=crt2.o)"
+          kernel32_path="$(gcc -print-file-name=libkernel32.a)"
+          echo "crt2.o is at: $crt2_path"
+          echo "libkernel32.a is at: $kernel32_path"
 
           # bin/<fbtarget>/ - assembler, linker, archiver etc.
           mkdir -p bin/$FBTARGET
@@ -162,45 +150,53 @@ jobs:
           # lib/<fbtarget>/ - CRT objects and libraries from MinGW
           mkdir -p lib/$FBTARGET
 
-          # CRT startup objects
-          for obj in crt2.o dllcrt2.o gcrt2.o crtbegin.o crtend.o; do
-            if [ -f "$SYSROOT/$obj" ]; then
-              cp "$SYSROOT/$obj" lib/$FBTARGET/
-            elif [ -f "$GCC_LIBDIR/$obj" ]; then
-              cp "$GCC_LIBDIR/$obj" lib/$FBTARGET/
+          # Helper: copy file located via gcc -print-file-name
+          copy_gcc_file() {
+            local name="$1"
+            local dest="$2"
+            local path="$(gcc -print-file-name=$name)"
+            # gcc returns just the filename if not found
+            if [ "$path" != "$name" ] && [ -f "$path" ]; then
+              cp "$path" "$dest"
+              echo "  copied $name from $path"
+            else
+              echo "  SKIP $name (not found)"
             fi
+          }
+
+          # CRT startup objects
+          echo "=== CRT objects ==="
+          for obj in crt2.o dllcrt2.o gcrt2.o crtbegin.o crtend.o; do
+            copy_gcc_file "$obj" "lib/$FBTARGET/"
           done
 
           # GCC internal libs
+          echo "=== GCC libs ==="
           for lib in libgcc.a libgcc_eh.a libsupc++.a; do
-            if [ -f "$GCC_LIBDIR/$lib" ]; then
-              cp "$GCC_LIBDIR/$lib" lib/$FBTARGET/
-            fi
+            copy_gcc_file "$lib" "lib/$FBTARGET/"
           done
 
           # MinGW runtime libs
+          echo "=== MinGW runtime libs ==="
           for lib in libmingw32.a libmingwex.a libmoldname.a; do
-            if [ -f "$LIBDIR/$lib" ]; then
-              cp "$LIBDIR/$lib" lib/$FBTARGET/
-            elif [ -f "$SYSROOT/$lib" ]; then
-              cp "$SYSROOT/$lib" lib/$FBTARGET/
-            fi
+            copy_gcc_file "$lib" "lib/$FBTARGET/"
           done
 
           # Windows system import libraries (as .dll.a)
+          echo "=== Windows import libs ==="
           for lib in advapi32 gdi32 kernel32 msvcrt user32 winmm winspool; do
-            src="$LIBDIR/lib${lib}.a"
-            if [ -f "$src" ]; then
-              cp "$src" lib/$FBTARGET/lib${lib}.dll.a
+            local_path="$(gcc -print-file-name=lib${lib}.a)"
+            if [ "$local_path" != "lib${lib}.a" ] && [ -f "$local_path" ]; then
+              cp "$local_path" "lib/$FBTARGET/lib${lib}.dll.a"
+              echo "  copied lib${lib}.a -> lib${lib}.dll.a"
+            else
+              echo "  SKIP lib${lib}.a (not found)"
             fi
           done
 
           # libffi
-          if [ -f "$LIBDIR/libffi.a" ]; then
-            cp "$LIBDIR/libffi.a" lib/$FBTARGET/
-          elif [ -f "$MINGW_PREFIX/lib/libffi.a" ]; then
-            cp "$MINGW_PREFIX/lib/libffi.a" lib/$FBTARGET/
-          fi
+          echo "=== libffi ==="
+          copy_gcc_file "libffi.a" "lib/$FBTARGET/"
 
           echo "=== bin/$FBTARGET contents ==="
           ls -la bin/$FBTARGET/
