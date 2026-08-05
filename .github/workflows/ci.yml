@@ -157,9 +157,35 @@ jobs:
           # libffi
           copy_file "libffi.a" "libffi.a" || echo "skip: libffi.a"
 
+          # Copy DLLs needed by gcc.exe and other tools in bin/<fbtarget>/
+          # These are runtime dependencies that must travel with the executables
+          echo "=== Copying DLL dependencies for bin/$FBTARGET ==="
+          for dll in libwinpthread-1.dll libgcc_s_seh-1.dll libgcc_s_sjlj-1.dll \
+                     libgcc_s_dw2-1.dll libiconv-2.dll libintl-8.dll \
+                     libdl.dll zlib1.dll libzstd.dll; do
+            if [ -f "$MINGW_BIN/$dll" ]; then
+              cp "$MINGW_BIN/$dll" bin/$FBTARGET/
+              echo "  $dll"
+            fi
+          done
+
+          # Copy DLLs needed by cc1.exe
+          echo "=== Copying DLL dependencies for cc1.exe ==="
+          for dll in libwinpthread-1.dll libgcc_s_seh-1.dll libgcc_s_sjlj-1.dll \
+                     libgcc_s_dw2-1.dll libgmp-10.dll libiconv-2.dll \
+                     libisl-*.dll libmpc-3.dll libmpfr-6.dll \
+                     libzstd.dll zlib1.dll; do
+            for f in $MINGW_BIN/$dll; do
+              if [ -f "$f" ]; then
+                cp "$f" "$CC1_DIR/"
+                echo "  $(basename $f)"
+              fi
+            done
+          done
+
           echo "=== bin/$FBTARGET ==="
           ls bin/$FBTARGET/
-          echo "=== bin/lib/gcc/$GCC_TARGET/$GCC_VERSION ==="
+          echo "=== $CC1_DIR ==="
           ls "$CC1_DIR/"
           echo "=== lib/$FBTARGET ==="
           ls lib/$FBTARGET/
