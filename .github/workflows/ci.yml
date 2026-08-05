@@ -80,7 +80,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: bootstrap
-          key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}
+          key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}-v2
 
       - name: Download and build bootstrap compiler
         if: steps.cache-bootstrap.outputs.cache-hit != 'true'
@@ -89,7 +89,6 @@ jobs:
           curl -sL "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz" -o "${BOOTSTRAP_PACKAGE}.tar.xz"
           tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
           cd "${BOOTSTRAP_PACKAGE}"
-          echo "ENABLE_STANDALONE := 1" > config.mk
           if [ "${{ matrix.fbtarget }}" = "win64" ]; then
             echo "TARGET_ARCH := x86_64" >> config.mk
           fi
@@ -104,7 +103,7 @@ jobs:
           if [ "${{ matrix.fbtarget }}" = "win64" ]; then
             echo "TARGET_ARCH := x86_64" >> config.mk
           fi
-          make -j$(nproc) FBC="bootstrap/fbc -i bootstrap/inc" </dev/null
+          make -j$(nproc) FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
       - name: Rebuild fbc (pass 2 - self-host)
         run: |
