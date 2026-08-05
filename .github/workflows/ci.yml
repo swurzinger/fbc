@@ -66,12 +66,14 @@ jobs:
         run: |
           echo "=== gcc ==="
           gcc --version | head -1
-          echo "=== ffi.h location ==="
-          find / -name "ffi.h" 2>/dev/null || true
-          echo "=== libffi.a location ==="
-          find / -name "libffi*" 2>/dev/null || true
           echo "=== gcc search paths ==="
           echo | gcc -E -Wp,-v - 2>&1 | grep "^ " || true
+          echo "=== ffi.h check ==="
+          gcc -E -include ffi.h -x c /dev/null > /dev/null 2>&1 && echo "ffi.h: found by gcc" || echo "ffi.h: NOT found by gcc"
+          echo "=== pkg-config libffi ==="
+          pkg-config --cflags --libs libffi 2>&1 || true
+          echo "=== pacman libffi files ==="
+          pacman -Ql $(pacman -Qq | grep libffi) 2>/dev/null || true
 
       - name: Cache bootstrap compiler
         id: cache-bootstrap
