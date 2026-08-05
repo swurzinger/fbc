@@ -119,9 +119,19 @@ jobs:
 
           # bin/<fbtarget>/ - assembler, linker, archiver etc.
           mkdir -p bin/$FBTARGET
-          for tool in ar as dlltool gprof ld; do
+          for tool in ar as dlltool gprof ld gcc; do
             cp "$MINGW_PREFIX/bin/$tool.exe" bin/$FBTARGET/
           done
+
+          # cc1.exe for gcc -gen gcc backend
+          GCC_LIBEXEC="$MINGW_PREFIX/libexec/gcc/$GCC_TARGET/$GCC_VERSION"
+          if [ ! -d "$GCC_LIBEXEC" ]; then
+            GCC_LIBEXEC=$(find "$MINGW_PREFIX/libexec/gcc/$GCC_TARGET" -maxdepth 1 -type d 2>/dev/null | tail -1)
+          fi
+          if [ -f "$GCC_LIBEXEC/cc1.exe" ]; then
+            mkdir -p bin/libexec/gcc/$GCC_TARGET/$GCC_VERSION
+            cp "$GCC_LIBEXEC/cc1.exe" bin/libexec/gcc/$GCC_TARGET/$GCC_VERSION/
+          fi
 
           # lib/<fbtarget>/ - CRT objects and libraries from MinGW
           mkdir -p lib/$FBTARGET
@@ -136,7 +146,6 @@ jobs:
           # GCC internal libs
           GCC_LIBDIR="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION"
           if [ ! -d "$GCC_LIBDIR" ]; then
-            # Try without minor version (some installations use major only)
             GCC_LIBDIR=$(find "$MINGW_PREFIX/lib/gcc/$GCC_TARGET" -maxdepth 1 -type d | tail -1)
           fi
           cp "$GCC_LIBDIR/crtbegin.o" lib/$FBTARGET/ 2>/dev/null || true
@@ -178,3 +187,50 @@ jobs:
       - name: Verify fbc works
         run: |
           ./fbc --version
+          # Quick smoke test - compile a hello world
+          echo 'print "Hello from fbc"' > hello.bas
+          ./fbc hello.bas
+          ./hello.exe
+
+      - name: Package minimal standalone compiler
+        run: |
+          FBTARGET="${{ matrix.fbtarget }}"
+          PKGDIR="fbc-$FBTARGET"
+          mkdir -p "$PKGDIR"
+
+          # fbc.exe
+          cp fbc.exe "$PKGDIR/"
+
+          # bin/<fbtarget>/* and bin/libexec/**
+          cp -r bin/ "$PKGDIR/bin/"
+
+          # lib/<fbtarget>/*.a, *.o, *.x
+          mkdir -p "$PKGDIR/lib/$FBTARGET"
+          cp lib/$FBTARGET/*.a "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
+          cp lib/$FBTARGET/*.o "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
+          cp lib/$FBTARGET/*.x "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
+
+          # Minimal includes (enough to compile most programs)
+          mkdir -p "$PKGDIR/inc/fbc-int"
+          for f in datetime.bi dir.bi file.bi string.bi utf_conv.bi vbcompat.bi; do
+            cp "inc/$f" "$PKGDIR/inc/" 2>/dev/null || true
+          done
+          cp inc/fb*.bi "$PKGDIR/inc/" 2>/dev/null || true
+          cp inc/fbc-int/* "$PKGDIR/inc/fbc-int/" 2>/dev/null || true
+
+          # Docs
+          cp changelog.txt "$PKGDIR/" 2>/dev/null || true
+          cp readme.txt "$PKGDIR/" 2>/dev/null || true
+
+          echo "=== Package contents ==="
+          find "$PKGDIR" -type f | sort | head -50
+          echo "..."
+          find "$PKGDIR" -type f | wc -l
+          echo "total files"
+
+      - name: Upload minimal compiler package
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fbc-${{ matrix.fbtarget }}-minimal
+          path: fbc-${{ matrix.fbtarget }}/
