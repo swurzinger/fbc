@@ -105,6 +105,69 @@ jobs:
           fi
           make -j$(nproc) FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
+      - name: Populate standalone toolchain dirs
+        run: |
+          FBTARGET="${{ matrix.fbtarget }}"
+          MINGW_PREFIX="$(dirname $(which gcc))/.."
+
+          # Determine the gcc target triplet
+          GCC_TARGET="$(gcc -dumpmachine)"
+          GCC_VERSION="$(gcc -dumpversion)"
+
+          echo "FBTARGET=$FBTARGET, MINGW_PREFIX=$MINGW_PREFIX"
+          echo "GCC_TARGET=$GCC_TARGET, GCC_VERSION=$GCC_VERSION"
+
+          # bin/<fbtarget>/ - assembler, linker, archiver etc.
+          mkdir -p bin/$FBTARGET
+          for tool in ar as dlltool gprof ld; do
+            cp "$MINGW_PREFIX/bin/$tool.exe" bin/$FBTARGET/
+          done
+
+          # lib/<fbtarget>/ - CRT objects and libraries from MinGW
+          mkdir -p lib/$FBTARGET
+
+          # CRT startup objects
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/crt2.o" lib/$FBTARGET/
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/dllcrt2.o" lib/$FBTARGET/
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/gcrt2.o" lib/$FBTARGET/ 2>/dev/null || true
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/crtbegin.o" lib/$FBTARGET/ 2>/dev/null || true
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/crtend.o" lib/$FBTARGET/ 2>/dev/null || true
+
+          # GCC internal libs
+          GCC_LIBDIR="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION"
+          if [ ! -d "$GCC_LIBDIR" ]; then
+            # Try without minor version (some installations use major only)
+            GCC_LIBDIR=$(find "$MINGW_PREFIX/lib/gcc/$GCC_TARGET" -maxdepth 1 -type d | tail -1)
+          fi
+          cp "$GCC_LIBDIR/crtbegin.o" lib/$FBTARGET/ 2>/dev/null || true
+          cp "$GCC_LIBDIR/crtend.o" lib/$FBTARGET/ 2>/dev/null || true
+          cp "$GCC_LIBDIR/libgcc.a" lib/$FBTARGET/ 2>/dev/null || true
+          cp "$GCC_LIBDIR/libgcc_eh.a" lib/$FBTARGET/ 2>/dev/null || true
+
+          # MinGW runtime and system libs
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libmingw32.a" lib/$FBTARGET/
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libmingwex.a" lib/$FBTARGET/
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libmoldname.a" lib/$FBTARGET/
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libsupc++.a" lib/$FBTARGET/ 2>/dev/null || \
+            cp "$GCC_LIBDIR/libsupc++.a" lib/$FBTARGET/ 2>/dev/null || true
+
+          # Windows system import libraries (as .dll.a)
+          for lib in advapi32 gdi32 kernel32 msvcrt user32 winmm winspool; do
+            src="$MINGW_PREFIX/$GCC_TARGET/lib/lib${lib}.a"
+            if [ -f "$src" ]; then
+              cp "$src" lib/$FBTARGET/lib${lib}.dll.a
+            fi
+          done
+
+          # libffi
+          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libffi.a" lib/$FBTARGET/ 2>/dev/null || \
+            cp "$MINGW_PREFIX/lib/libffi.a" lib/$FBTARGET/ 2>/dev/null || true
+
+          echo "=== bin/$FBTARGET contents ==="
+          ls -la bin/$FBTARGET/
+          echo "=== lib/$FBTARGET contents (first 30) ==="
+          ls lib/$FBTARGET/ | head -30
+
       - name: Rebuild fbc (pass 2 - self-host)
         run: |
           mv fbc.exe fbc_pass1.exe
