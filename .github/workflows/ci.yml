@@ -5,37 +5,22 @@ on:
     branches: [ master, 'test/**', 'ci/**' ]
   pull_request:
     branches: [ master ]
-  # Allow manual trigger from Actions tab (works on any branch)
   workflow_dispatch:
 
-env:
-  # Bootstrap fbc version used to compile the compiler
-  BOOTSTRAP_VERSION: "1.10.1"
-
 jobs:
-  # ===========================================================================
-  # Linux x86_64 build (disabled during Windows troubleshooting)
-  # ===========================================================================
-  # linux-x86_64:
-  #   ... (temporarily disabled)
-
-  # ===========================================================================
-  # Windows builds (x86 and x64) using MSYS2 + MinGW-w64
-  # ===========================================================================
-  windows:
+  # Fast debug job - only toolchain setup, no fbc build
+  debug-toolchain:
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: "Windows x86 (32-bit)"
+          - name: "Debug Win32"
             msystem: MINGW32
-            arch: i686
             pkg_prefix: mingw-w64-i686
             fbtarget: win32
-          - name: "Windows x64 (64-bit)"
+          - name: "Debug Win64"
             msystem: MINGW64
-            arch: x86_64
             pkg_prefix: mingw-w64-x86_64
             fbtarget: win64
 
@@ -46,217 +31,46 @@ jobs:
         shell: msys2 {0}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
           update: false
           install: >-
-            make
-            tar
-            xz
             ${{ matrix.pkg_prefix }}-gcc
             ${{ matrix.pkg_prefix }}-binutils
             ${{ matrix.pkg_prefix }}-libffi
 
-      - name: Show toolchain info
-        run: |
-          echo "=== gcc ==="
-          gcc --version | head -1
-          echo "=== gcc search paths ==="
-          echo | gcc -E -Wp,-v - 2>&1 | grep "^ " || true
-          echo "=== ffi.h check ==="
-          gcc -E -include ffi.h -x c /dev/null > /dev/null 2>&1 && echo "ffi.h: found by gcc" || echo "ffi.h: NOT found by gcc"
-          echo "=== pkg-config libffi ==="
-          pkg-config --cflags --libs libffi 2>&1 || true
-          echo "=== pacman libffi files ==="
-          pacman -Ql $(pacman -Qq | grep libffi) 2>/dev/null || true
-
-      - name: Cache bootstrap compiler
-        id: cache-bootstrap
-        uses: actions/cache@v4
-        with:
-          path: bootstrap
-          key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}-v2
-
-      - name: Download and build bootstrap compiler
-        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
-        run: |
-          BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
-          curl -sL "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz" -o "${BOOTSTRAP_PACKAGE}.tar.xz"
-          tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
-          cd "${BOOTSTRAP_PACKAGE}"
-          if [ "${{ matrix.fbtarget }}" = "win64" ]; then
-            echo "TARGET_ARCH := x86_64" >> config.mk
-          fi
-          make -j$(nproc) bootstrap
-          cd ..
-          mv "${BOOTSTRAP_PACKAGE}" bootstrap
-
-      - name: Build fbc (pass 1 - using bootstrap)
-        run: |
-          rm -f config.mk
-          echo "ENABLE_STANDALONE := 1" > config.mk
-          if [ "${{ matrix.fbtarget }}" = "win64" ]; then
-            echo "TARGET_ARCH := x86_64" >> config.mk
-          fi
-          make -j$(nproc) FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
-
-      - name: Populate standalone toolchain dirs
+      - name: Explore toolchain layout
         run: |
           set -x
           FBTARGET="${{ matrix.fbtarget }}"
-          MINGW_PREFIX="$(dirname $(which gcc))/.."
 
-          # Determine the gcc target triplet
           GCC_TARGET="$(gcc -dumpmachine)"
           GCC_VERSION="$(gcc -dumpversion)"
+          MINGW_PREFIX="$(dirname $(which gcc))/.."
 
-          echo "FBTARGET=$FBTARGET, MINGW_PREFIX=$MINGW_PREFIX"
-          echo "GCC_TARGET=$GCC_TARGET, GCC_VERSION=$GCC_VERSION"
+          echo "=== Basic info ==="
+          echo "FBTARGET=$FBTARGET"
+          echo "GCC_TARGET=$GCC_TARGET"
+          echo "GCC_VERSION=$GCC_VERSION"
+          echo "MINGW_PREFIX=$MINGW_PREFIX"
 
-          # Find the gcc internal lib directory
-          GCC_LIBDIR="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION"
-          if [ ! -d "$GCC_LIBDIR" ]; then
-            GCC_LIBDIR=$(find "$MINGW_PREFIX/lib/gcc/$GCC_TARGET" -maxdepth 1 -type d 2>/dev/null | tail -1)
-          fi
-          echo "GCC_LIBDIR=$GCC_LIBDIR"
-
-          # Use gcc -print-file-name to locate files reliably
-          crt2_path="$(gcc -print-file-name=crt2.o)"
-          kernel32_path="$(gcc -print-file-name=libkernel32.a)"
-          echo "crt2.o is at: $crt2_path"
-          echo "libkernel32.a is at: $kernel32_path"
-
-          # bin/<fbtarget>/ - assembler, linker, archiver etc.
-          mkdir -p bin/$FBTARGET
-          for tool in ar as dlltool gprof ld gcc; do
-            cp "$MINGW_PREFIX/bin/$tool.exe" bin/$FBTARGET/
+          echo "=== gcc -print-file-name for key files ==="
+          for f in crt2.o dllcrt2.o gcrt2.o crtbegin.o crtend.o \
+                   libgcc.a libgcc_eh.a libsupc++.a \
+                   libmingw32.a libmingwex.a libmoldname.a \
+                   libkernel32.a libmsvcrt.a libuser32.a libadvapi32.a \
+                   libgdi32.a libwinmm.a libwinspool.a \
+                   libffi.a; do
+            echo "  $f => $(gcc -print-file-name=$f)"
           done
 
-          # cc1.exe for gcc -gen gcc backend
-          GCC_LIBEXEC="$MINGW_PREFIX/libexec/gcc/$GCC_TARGET/$GCC_VERSION"
-          if [ ! -d "$GCC_LIBEXEC" ]; then
-            GCC_LIBEXEC=$(find "$MINGW_PREFIX/libexec/gcc/$GCC_TARGET" -maxdepth 1 -type d 2>/dev/null | tail -1)
-          fi
-          if [ -f "$GCC_LIBEXEC/cc1.exe" ]; then
-            mkdir -p bin/libexec/gcc/$GCC_TARGET/$GCC_VERSION
-            cp "$GCC_LIBEXEC/cc1.exe" bin/libexec/gcc/$GCC_TARGET/$GCC_VERSION/
-          fi
+          echo "=== gcc -print-search-dirs ==="
+          gcc -print-search-dirs
 
-          # lib/<fbtarget>/ - CRT objects and libraries from MinGW
-          mkdir -p lib/$FBTARGET
+          echo "=== libexec cc1 ==="
+          find "$MINGW_PREFIX/libexec" -name "cc1.exe" 2>/dev/null || echo "cc1.exe not found in libexec"
 
-          # Helper: copy file located via gcc -print-file-name
-          copy_gcc_file() {
-            local name="$1"
-            local dest="$2"
-            local path="$(gcc -print-file-name=$name)"
-            # gcc returns just the filename if not found
-            if [ "$path" != "$name" ] && [ -f "$path" ]; then
-              cp "$path" "$dest"
-              echo "  copied $name from $path"
-            else
-              echo "  SKIP $name (not found)"
-            fi
-          }
-
-          # CRT startup objects
-          echo "=== CRT objects ==="
-          for obj in crt2.o dllcrt2.o gcrt2.o crtbegin.o crtend.o; do
-            copy_gcc_file "$obj" "lib/$FBTARGET/"
-          done
-
-          # GCC internal libs
-          echo "=== GCC libs ==="
-          for lib in libgcc.a libgcc_eh.a libsupc++.a; do
-            copy_gcc_file "$lib" "lib/$FBTARGET/"
-          done
-
-          # MinGW runtime libs
-          echo "=== MinGW runtime libs ==="
-          for lib in libmingw32.a libmingwex.a libmoldname.a; do
-            copy_gcc_file "$lib" "lib/$FBTARGET/"
-          done
-
-          # Windows system import libraries (as .dll.a)
-          echo "=== Windows import libs ==="
-          for lib in advapi32 gdi32 kernel32 msvcrt user32 winmm winspool; do
-            local_path="$(gcc -print-file-name=lib${lib}.a)"
-            if [ "$local_path" != "lib${lib}.a" ] && [ -f "$local_path" ]; then
-              cp "$local_path" "lib/$FBTARGET/lib${lib}.dll.a"
-              echo "  copied lib${lib}.a -> lib${lib}.dll.a"
-            else
-              echo "  SKIP lib${lib}.a (not found)"
-            fi
-          done
-
-          # libffi
-          echo "=== libffi ==="
-          copy_gcc_file "libffi.a" "lib/$FBTARGET/"
-
-          echo "=== bin/$FBTARGET contents ==="
-          ls -la bin/$FBTARGET/
-          echo "=== lib/$FBTARGET contents ==="
-          ls lib/$FBTARGET/
-
-      - name: Rebuild fbc (pass 2 - self-host)
-        run: |
-          mv fbc.exe fbc_pass1.exe
-          make -j$(nproc) clean-compiler
-          make -j$(nproc) compiler FBC='./fbc_pass1 -i inc' </dev/null
-          rm -f fbc_pass1.exe
-
-      - name: Verify fbc works
-        run: |
-          ./fbc --version
-          # Quick smoke test - compile a hello world
-          echo 'print "Hello from fbc"' > hello.bas
-          ./fbc hello.bas
-          ./hello.exe
-
-      - name: Package minimal standalone compiler
-        run: |
-          FBTARGET="${{ matrix.fbtarget }}"
-          PKGDIR="fbc-$FBTARGET"
-          mkdir -p "$PKGDIR"
-
-          # fbc.exe
-          cp fbc.exe "$PKGDIR/"
-
-          # bin/<fbtarget>/* and bin/libexec/**
-          cp -r bin/ "$PKGDIR/bin/"
-
-          # lib/<fbtarget>/*.a, *.o, *.x
-          mkdir -p "$PKGDIR/lib/$FBTARGET"
-          cp lib/$FBTARGET/*.a "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
-          cp lib/$FBTARGET/*.o "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
-          cp lib/$FBTARGET/*.x "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
-
-          # Minimal includes (enough to compile most programs)
-          mkdir -p "$PKGDIR/inc/fbc-int"
-          for f in datetime.bi dir.bi file.bi string.bi utf_conv.bi vbcompat.bi; do
-            cp "inc/$f" "$PKGDIR/inc/" 2>/dev/null || true
-          done
-          cp inc/fb*.bi "$PKGDIR/inc/" 2>/dev/null || true
-          cp inc/fbc-int/* "$PKGDIR/inc/fbc-int/" 2>/dev/null || true
-
-          # Docs
-          cp changelog.txt "$PKGDIR/" 2>/dev/null || true
-          cp readme.txt "$PKGDIR/" 2>/dev/null || true
-
-          echo "=== Package contents ==="
-          find "$PKGDIR" -type f | sort | head -50
-          echo "..."
-          find "$PKGDIR" -type f | wc -l
-          echo "total files"
-
-      - name: Upload minimal compiler package
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fbc-${{ matrix.fbtarget }}-minimal
-          path: fbc-${{ matrix.fbtarget }}/
+          echo "=== /mingw*/lib/ top-level ==="
+          ls /${{ matrix.msystem == 'MINGW32' && 'mingw32' || 'mingw64' }}/lib/*.a 2>/dev/null | head -20 || echo "(none)"
