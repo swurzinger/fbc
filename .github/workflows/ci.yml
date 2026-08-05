@@ -145,7 +145,7 @@ jobs:
         id: cache-bootstrap
         uses: actions/cache/restore@v4
         with:
-          path: ${{ github.workspace }}/bootstrap
+          path: bootstrap
           key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}
 
       - name: Download and build bootstrap compiler
@@ -166,7 +166,7 @@ jobs:
         if: steps.cache-bootstrap.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: ${{ github.workspace }}/bootstrap
+          path: bootstrap
           key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}
 
       - name: Populate standalone toolchain dirs
