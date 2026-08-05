@@ -88,30 +88,37 @@ jobs:
           GCC_TARGET="$(gcc -dumpmachine)"
           GCC_VERSION="$(gcc -dumpversion)"
           GCC_LIBDIR="$(gcc -print-file-name=libgcc.a | sed 's|/libgcc\.a$||')"
+          MINGW_BIN="$(dirname $(which gcc))"
+          MINGW_PREFIX="$MINGW_BIN/.."
 
           echo "FBTARGET=$FBTARGET GCC_TARGET=$GCC_TARGET GCC_VERSION=$GCC_VERSION"
           echo "GCC_LIBDIR=$GCC_LIBDIR"
+          echo "MINGW_PREFIX=$MINGW_PREFIX"
 
-          # bin/<fbtarget>/ - assembler, linker, archiver, gcc
+          # bin/<fbtarget>/ - assembler, linker, archiver
           mkdir -p bin/$FBTARGET
-          MINGW_BIN="$(dirname $(which gcc))"
           for tool in ar as dlltool gprof ld gcc; do
             cp "$MINGW_BIN/$tool.exe" bin/$FBTARGET/
           done
 
-          # cc1.exe - check gcc libdir (gcc 16+) and libexec
-          cc1_path="$(find "$GCC_LIBDIR" -name cc1.exe 2>/dev/null | head -1)"
-          if [ -z "$cc1_path" ]; then
-            cc1_path="$(find "$(dirname $MINGW_BIN)/libexec" -name cc1.exe 2>/dev/null | head -1)"
+          # cc1.exe - gcc looks for it relative to its own location at
+          # ../lib/gcc/<target>/<version>/cc1.exe
+          # So from bin/<fbtarget>/gcc.exe -> bin/lib/gcc/<target>/<version>/cc1.exe
+          CC1_DIR="bin/lib/gcc/$GCC_TARGET/$GCC_VERSION"
+          mkdir -p "$CC1_DIR"
+          # Find cc1.exe in the real gcc installation
+          REAL_CC1="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION/cc1.exe"
+          if [ ! -f "$REAL_CC1" ]; then
+            REAL_CC1="$MINGW_PREFIX/libexec/gcc/$GCC_TARGET/$GCC_VERSION/cc1.exe"
           fi
-          if [ -n "$cc1_path" ]; then
-            # Preserve relative path structure that gcc expects
-            cc1_rel="${cc1_path#$(dirname $MINGW_BIN)/}"
-            mkdir -p "bin/$(dirname $cc1_rel)"
-            cp "$cc1_path" "bin/$cc1_rel"
-            echo "cc1.exe: $cc1_path -> bin/$cc1_rel"
+          if [ -f "$REAL_CC1" ]; then
+            cp "$REAL_CC1" "$CC1_DIR/"
+            echo "cc1.exe: copied from $REAL_CC1 to $CC1_DIR/"
           else
-            echo "WARNING: cc1.exe not found (gcc -gen gcc backend won't work)"
+            echo "ERROR: cc1.exe not found!"
+            echo "Searching..."
+            find "$MINGW_PREFIX" -name "cc1.exe" 2>/dev/null
+            exit 1
           fi
 
           # lib/<fbtarget>/ - all CRT, gcc, and system libraries
@@ -152,6 +159,8 @@ jobs:
 
           echo "=== bin/$FBTARGET ==="
           ls bin/$FBTARGET/
+          echo "=== bin/lib/gcc/$GCC_TARGET/$GCC_VERSION ==="
+          ls "$CC1_DIR/"
           echo "=== lib/$FBTARGET ==="
           ls lib/$FBTARGET/
 
