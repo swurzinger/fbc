@@ -117,6 +117,32 @@ jobs:
           echo "FBTARGET=$FBTARGET, MINGW_PREFIX=$MINGW_PREFIX"
           echo "GCC_TARGET=$GCC_TARGET, GCC_VERSION=$GCC_VERSION"
 
+          # Find the gcc internal lib directory
+          GCC_LIBDIR="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION"
+          if [ ! -d "$GCC_LIBDIR" ]; then
+            GCC_LIBDIR=$(find "$MINGW_PREFIX/lib/gcc/$GCC_TARGET" -maxdepth 1 -type d 2>/dev/null | tail -1)
+          fi
+          echo "GCC_LIBDIR=$GCC_LIBDIR"
+
+          # Locate CRT objects - they can be in different places depending on gcc version
+          SYSROOT="$MINGW_PREFIX/$GCC_TARGET/lib"
+          if [ ! -f "$SYSROOT/crt2.o" ]; then
+            # Try the gcc lib directory
+            SYSROOT="$GCC_LIBDIR"
+          fi
+          if [ ! -f "$SYSROOT/crt2.o" ]; then
+            # Ask gcc directly where it looks
+            SYSROOT=$(gcc -print-file-name=crt2.o | sed 's|/crt2\.o$||')
+          fi
+          echo "SYSROOT (for CRT objects)=$SYSROOT"
+
+          # Locate import libraries
+          LIBDIR="$MINGW_PREFIX/$GCC_TARGET/lib"
+          if [ ! -f "$LIBDIR/libkernel32.a" ]; then
+            LIBDIR=$(gcc -print-file-name=libkernel32.a | sed 's|/libkernel32\.a$||')
+          fi
+          echo "LIBDIR (for import libs)=$LIBDIR"
+
           # bin/<fbtarget>/ - assembler, linker, archiver etc.
           mkdir -p bin/$FBTARGET
           for tool in ar as dlltool gprof ld gcc; do
@@ -137,45 +163,49 @@ jobs:
           mkdir -p lib/$FBTARGET
 
           # CRT startup objects
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/crt2.o" lib/$FBTARGET/
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/dllcrt2.o" lib/$FBTARGET/
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/gcrt2.o" lib/$FBTARGET/ 2>/dev/null || true
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/crtbegin.o" lib/$FBTARGET/ 2>/dev/null || true
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/crtend.o" lib/$FBTARGET/ 2>/dev/null || true
+          for obj in crt2.o dllcrt2.o gcrt2.o crtbegin.o crtend.o; do
+            if [ -f "$SYSROOT/$obj" ]; then
+              cp "$SYSROOT/$obj" lib/$FBTARGET/
+            elif [ -f "$GCC_LIBDIR/$obj" ]; then
+              cp "$GCC_LIBDIR/$obj" lib/$FBTARGET/
+            fi
+          done
 
           # GCC internal libs
-          GCC_LIBDIR="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION"
-          if [ ! -d "$GCC_LIBDIR" ]; then
-            GCC_LIBDIR=$(find "$MINGW_PREFIX/lib/gcc/$GCC_TARGET" -maxdepth 1 -type d | tail -1)
-          fi
-          cp "$GCC_LIBDIR/crtbegin.o" lib/$FBTARGET/ 2>/dev/null || true
-          cp "$GCC_LIBDIR/crtend.o" lib/$FBTARGET/ 2>/dev/null || true
-          cp "$GCC_LIBDIR/libgcc.a" lib/$FBTARGET/ 2>/dev/null || true
-          cp "$GCC_LIBDIR/libgcc_eh.a" lib/$FBTARGET/ 2>/dev/null || true
+          for lib in libgcc.a libgcc_eh.a libsupc++.a; do
+            if [ -f "$GCC_LIBDIR/$lib" ]; then
+              cp "$GCC_LIBDIR/$lib" lib/$FBTARGET/
+            fi
+          done
 
-          # MinGW runtime and system libs
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libmingw32.a" lib/$FBTARGET/
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libmingwex.a" lib/$FBTARGET/
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libmoldname.a" lib/$FBTARGET/
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libsupc++.a" lib/$FBTARGET/ 2>/dev/null || \
-            cp "$GCC_LIBDIR/libsupc++.a" lib/$FBTARGET/ 2>/dev/null || true
+          # MinGW runtime libs
+          for lib in libmingw32.a libmingwex.a libmoldname.a; do
+            if [ -f "$LIBDIR/$lib" ]; then
+              cp "$LIBDIR/$lib" lib/$FBTARGET/
+            elif [ -f "$SYSROOT/$lib" ]; then
+              cp "$SYSROOT/$lib" lib/$FBTARGET/
+            fi
+          done
 
           # Windows system import libraries (as .dll.a)
           for lib in advapi32 gdi32 kernel32 msvcrt user32 winmm winspool; do
-            src="$MINGW_PREFIX/$GCC_TARGET/lib/lib${lib}.a"
+            src="$LIBDIR/lib${lib}.a"
             if [ -f "$src" ]; then
               cp "$src" lib/$FBTARGET/lib${lib}.dll.a
             fi
           done
 
           # libffi
-          cp "$MINGW_PREFIX/$GCC_TARGET/lib/libffi.a" lib/$FBTARGET/ 2>/dev/null || \
-            cp "$MINGW_PREFIX/lib/libffi.a" lib/$FBTARGET/ 2>/dev/null || true
+          if [ -f "$LIBDIR/libffi.a" ]; then
+            cp "$LIBDIR/libffi.a" lib/$FBTARGET/
+          elif [ -f "$MINGW_PREFIX/lib/libffi.a" ]; then
+            cp "$MINGW_PREFIX/lib/libffi.a" lib/$FBTARGET/
+          fi
 
           echo "=== bin/$FBTARGET contents ==="
           ls -la bin/$FBTARGET/
-          echo "=== lib/$FBTARGET contents (first 30) ==="
-          ls lib/$FBTARGET/ | head -30
+          echo "=== lib/$FBTARGET contents ==="
+          ls lib/$FBTARGET/
 
       - name: Rebuild fbc (pass 2 - self-host)
         run: |
