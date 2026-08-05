@@ -2,10 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, 'test/**', 'ci/**' ]
   pull_request:
     branches: [ master ]
-  # Allow manual trigger
+  # Allow manual trigger from Actions tab (works on any branch)
   workflow_dispatch:
 
 env:
