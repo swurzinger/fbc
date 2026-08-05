@@ -64,13 +64,17 @@ jobs:
           echo "as:  $(as --version | head -1)"
           echo "target: $(gcc -dumpmachine)"
 
+      - name: Cache bootstrap compiler
+        id: cache-bootstrap
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/bootstrap
+          key: bootstrap-${{ matrix.fbtarget }}-${{ env.BOOTSTRAP_VERSION }}-v3
+          save-always: true
+
       - name: Download and build bootstrap compiler
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
         run: |
-          # Skip if cached from a previous manual run (check for the binary)
-          if [ -f "bootstrap/bin/fbc.exe" ]; then
-            echo "Bootstrap already present, skipping build"
-            exit 0
-          fi
           BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
           curl -sL "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz" -o "${BOOTSTRAP_PACKAGE}.tar.xz"
           tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
