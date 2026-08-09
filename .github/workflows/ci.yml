@@ -348,8 +348,7 @@ jobs:
 
       - name: Build documentation tools
         run: |
-          MINGW_LIB="$(dirname $(gcc -print-file-name=libcurl.a))"
-          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc -p $MINGW_LIB"
+          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc -p /$MSYSTEM/lib"
           cd doc/libfbdoc
           make FBC="$FBC" </dev/null
           cd ../fbdoc
