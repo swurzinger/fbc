@@ -284,7 +284,29 @@ jobs:
           make -j$(nproc) compiler TARGET=arm-linux-gnueabihf \
             FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
-      - name: Run tests (via QEMU)
+      - name: Compile tests (via QEMU user-mode)
+        run: |
+          # Install QEMU user-mode for running fbc (ARM binary)
+          sudo apt-get -y --no-install-recommends install \
+            qemu-user-static binfmt-support
+          sudo update-binfmts --enable qemu-arm
+
+          # fbc invokes 'gcc' by name - symlink to cross-compiler
+          mkdir -p cross-bin
+          ln -sf /usr/bin/arm-linux-gnueabihf-gcc cross-bin/gcc
+          ln -sf /usr/bin/arm-linux-gnueabihf-g++ cross-bin/g++
+          ln -sf /usr/bin/arm-linux-gnueabihf-as cross-bin/as
+          ln -sf /usr/bin/arm-linux-gnueabihf-ld cross-bin/ld
+          ln -sf /usr/bin/arm-linux-gnueabihf-ar cross-bin/ar
+          export PATH="$PWD/cross-bin:$PATH"
+
+          bin/fbc --version
+
+          cd tests
+          # Build test binary but don't run it (will run in full QEMU)
+          make -f unit-tests.mk build_tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
+
+      - name: Run tests (via full QEMU)
         uses: uraimo/run-on-arch-action@v3
         with:
           arch: armv7
@@ -295,16 +317,13 @@ jobs:
           install: |
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
-              gcc g++ make \
-              libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
-              libgpm-dev libx11-dev libxext-dev libxpm-dev \
-              libxrender-dev libxrandr-dev libcunit1-dev
+              libncurses6 libffi8 libgl1 libglu1-mesa \
+              libgpm2 libx11-6 libxext6 libxpm4 \
+              libxrender1 libxrandr2 libcunit1
           run: |
             set -e
-            cd /fbc
-            bin/fbc --version
-            cd tests
-            make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
+            cd /fbc/tests
+            ./fbc-tests
             make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
 
       - name: Upload fbc binary
