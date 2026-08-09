@@ -9,87 +9,22 @@ env:
   BOOTSTRAP_VERSION: "1.10.1"
 
 jobs:
-  # Test: can we wget anything at all?
-  armv7-network-test:
+  # Reproduce original setup: matrix with armv6 + armv7 running together
+  linux-arm-matrix:
     runs-on: ubuntu-24.04
-    name: "armv7 - network test"
-    steps:
-      - uses: actions/checkout@v7
-      - uses: uraimo/run-on-arch-action@v3
-        with:
-          arch: armv7
-          distro: bookworm
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update -q -y
-            apt-get install -q -y --no-install-recommends wget ca-certificates
-          run: |
-            set -e
-            echo "Testing DNS..."
-            cat /etc/resolv.conf
-            echo "Testing small download..."
-            wget -q -O /dev/null "https://github.com/robots.txt"
-            echo "Small download OK"
-            echo "Testing large download..."
-            wget -q -O /dev/null "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz"
-            echo "Large download OK"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Linux armv7 (Raspberry Pi)"
+            arch: armv7
+            distro: bookworm
+          - name: "Linux armv6 (Raspberry Pi Zero)"
+            arch: armv6
+            distro: bookworm
 
-  # Test: is it the install size/time that causes issues?
-  armv7-heavy-install:
-    runs-on: ubuntu-24.04
-    name: "armv7 - heavy install + wget"
-    steps:
-      - uses: actions/checkout@v7
-      - uses: uraimo/run-on-arch-action@v3
-        with:
-          arch: armv7
-          distro: bookworm
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update -q -y
-            apt-get install -q -y --no-install-recommends \
-              gcc g++ make wget xz-utils ca-certificates \
-              libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
-              libgpm-dev libx11-dev libxext-dev libxpm-dev \
-              libxrender-dev libxrandr-dev
-          run: |
-            set -e
-            echo "Testing wget after heavy install..."
-            wget -q -O /dev/null "https://github.com/robots.txt"
-            echo "Small download OK"
-            wget -q "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz"
-            ls -la FreeBASIC-*.tar.xz
-            echo "Bootstrap download OK"
+    name: ${{ matrix.name }}
 
-  # Test: skip githubToken (no image caching) in case cached image is broken
-  armv7-no-cache:
-    runs-on: ubuntu-24.04
-    name: "armv7 - no image cache"
-    steps:
-      - uses: actions/checkout@v7
-      - uses: uraimo/run-on-arch-action@v3
-        with:
-          arch: armv7
-          distro: bookworm
-          install: |
-            apt-get update -q -y
-            apt-get install -q -y --no-install-recommends \
-              gcc g++ make wget xz-utils ca-certificates \
-              libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
-              libgpm-dev libx11-dev libxext-dev libxpm-dev \
-              libxrender-dev libxrandr-dev
-          run: |
-            set -e
-            BOOTSTRAP_PACKAGE="FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap"
-            wget -q "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/${BOOTSTRAP_PACKAGE}.tar.xz"
-            tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
-            ls "${BOOTSTRAP_PACKAGE}/bootstrap/linux-arm/"
-            echo "Success!"
-
-  # Test: download on host, pass via volume mount
-  armv7-host-download:
-    runs-on: ubuntu-24.04
-    name: "armv7 - host download + volume"
     steps:
       - uses: actions/checkout@v7
 
@@ -97,10 +32,11 @@ jobs:
         run: |
           wget -q "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz"
 
-      - uses: uraimo/run-on-arch-action@v3
+      - name: Build and test on ${{ matrix.arch }}
+        uses: uraimo/run-on-arch-action@v3
         with:
-          arch: armv7
-          distro: bookworm
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
           githubToken: ${{ github.token }}
           dockerRunArgs: |
             --volume "${PWD}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz:/bootstrap.tar.xz"
@@ -113,6 +49,25 @@ jobs:
               libxrender-dev libxrandr-dev
           run: |
             set -e
+            BOOTSTRAP_PACKAGE="FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap"
             tar xf /bootstrap.tar.xz
-            ls FreeBASIC-*/bootstrap/linux-arm/
-            echo "Volume mount + extract OK"
+            cd "${BOOTSTRAP_PACKAGE}"
+            make -j$(nproc) bootstrap
+            cd ..
+
+            # Build fbc (pass 1 - using bootstrap)
+            rm -f config.mk
+            make -j$(nproc) FBC="${BOOTSTRAP_PACKAGE}/bin/fbc -i ${BOOTSTRAP_PACKAGE}/inc" </dev/null
+
+            # Rebuild fbc (pass 2 - self-host)
+            mv bin/fbc bin/fbc_pass1
+            make -j$(nproc) clean-compiler
+            make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
+            rm bin/fbc_pass1
+
+            # Verify
+            bin/fbc --version
+
+            # Run unit tests
+            cd tests
+            make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
