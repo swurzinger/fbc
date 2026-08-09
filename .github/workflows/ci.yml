@@ -348,7 +348,8 @@ jobs:
 
       - name: Build documentation tools
         run: |
-          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc -p /$MSYSTEM/lib"
+          MINGW_PREFIX="$(cygpath -m /$MSYSTEM)"
+          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc -p $MINGW_PREFIX/lib -p $MINGW_PREFIX/x86_64-w64-mingw32/lib"
           cd doc/libfbdoc
           make FBC="$FBC" </dev/null
           cd ../fbdoc
