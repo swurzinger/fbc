@@ -224,6 +224,12 @@ jobs:
       - name: Install cross-compilation toolchain
         run: |
           sudo dpkg --add-architecture armhf
+          # armhf packages are on ports.ubuntu.com, not the main archive
+          sudo tee /etc/apt/sources.list.d/armhf-ports.list > /dev/null <<'EOF'
+          deb [arch=armhf] http://ports.ubuntu.com/ noble main universe
+          deb [arch=armhf] http://ports.ubuntu.com/ noble-updates main universe
+          deb [arch=armhf] http://ports.ubuntu.com/ noble-security main universe
+          EOF
           sudo apt-get -qq update
           sudo apt-get -y --no-install-recommends install \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
