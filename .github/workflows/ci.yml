@@ -348,8 +348,19 @@ jobs:
 
       - name: Build documentation tools
         run: |
-          MINGW_PREFIX="$(cygpath -m /$MSYSTEM)"
-          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc -p $MINGW_PREFIX/lib -p $MINGW_PREFIX/x86_64-w64-mingw32/lib"
+          # Copy libraries that fbdoc needs into fbc's lib/win64/ so the
+          # standalone linker can find them
+          SYSLIB="/$MSYSTEM/x86_64-w64-mingw32/lib"
+          MINGLIB="/$MSYSTEM/lib"
+          for lib in libws2_32.a libmsimg32.a libversion.a libimm32.a; do
+            cp "$SYSLIB/$lib" fbc-win64/lib/win64/ 2>/dev/null || true
+          done
+          cp "$MINGLIB/libpcre2-8.a" fbc-win64/lib/win64/ 2>/dev/null || true
+          cp "$MINGLIB/libpcre.a" fbc-win64/lib/win64/ 2>/dev/null || true
+          cp "$MINGLIB/libcurl.a" fbc-win64/lib/win64/ 2>/dev/null || true
+          cp "$MINGLIB/libcurl.dll.a" fbc-win64/lib/win64/ 2>/dev/null || true
+
+          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc"
           cd doc/libfbdoc
           make FBC="$FBC" </dev/null
           cd ../fbdoc
