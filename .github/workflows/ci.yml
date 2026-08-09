@@ -306,12 +306,12 @@ jobs:
 
 
   # ===========================================================================
-  # Documentation (Windows - generates CHM)
+  # Documentation
   # ===========================================================================
   documentation:
     runs-on: windows-latest
     needs: windows
-    name: "Documentation (CHM)"
+    name: "Documentation"
 
     defaults:
       run:
