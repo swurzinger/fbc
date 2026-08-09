@@ -248,7 +248,7 @@ jobs:
         uses: actions/cache/restore@v6
         with:
           path: bootstrap
-          key: bootstrap-linux-arm-${{ env.BOOTSTRAP_VERSION }}
+          key: bootstrap-linux-x86_64-${{ env.BOOTSTRAP_VERSION }}
 
       - name: Download and build bootstrap compiler
         if: steps.cache-bootstrap.outputs.cache-hit != 'true'
@@ -257,7 +257,7 @@ jobs:
           wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
           tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
           cd "${BOOTSTRAP_PACKAGE}"
-          make -j$(nproc) bootstrap TARGET=arm-linux-gnueabihf
+          make -j$(nproc) bootstrap
           cd ..
           mv "${BOOTSTRAP_PACKAGE}" bootstrap
 
@@ -266,7 +266,7 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: bootstrap
-          key: bootstrap-linux-arm-${{ env.BOOTSTRAP_VERSION }}
+          key: bootstrap-linux-x86_64-${{ env.BOOTSTRAP_VERSION }}
 
       - name: Build fbc (pass 1 - cross-compile using bootstrap)
         run: |
