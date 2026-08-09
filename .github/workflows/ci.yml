@@ -1,4 +1,4 @@
-﻿name: CI
+name: CI
 
 on:
   push:
@@ -303,3 +303,79 @@ jobs:
         with:
           name: fbc-${{ matrix.fbtarget }}
           path: fbc-${{ matrix.fbtarget }}/
+
+
+  # ===========================================================================
+  # Documentation
+  # ===========================================================================
+  documentation:
+    runs-on: windows-latest
+    needs: windows
+    name: "Documentation"
+
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download fbc-win64 artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: fbc-win64
+          path: fbc-win64
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: false
+          install: >-
+            make
+            zip
+            gzip
+            mingw-w64-x86_64-crt-git
+            mingw-w64-x86_64-pcre
+            mingw-w64-x86_64-pcre2
+            mingw-w64-x86_64-curl
+
+      - name: Install HTML Help Workshop
+        shell: cmd
+        run: |
+          curl -sL -o htmlhelp.exe https://web.archive.org/web/20200918004813/https://download.microsoft.com/download/0/A/9/0A939EF6-E31C-430F-A3DF-DFAE7960D564/htmlhelp.exe
+          htmlhelp.exe /Q /T:C:\hhw /C
+          if not exist "C:\hhw\hhc.exe" exit /b 1
+
+      - name: Build documentation tools
+        run: |
+          # Copy libraries that fbdoc needs into fbc's lib/win64/ so the
+          # standalone linker can find them
+          MINGLIB="/$MSYSTEM/lib"
+          for lib in libws2_32.a libmsimg32.a libversion.a libimm32.a \
+                     libpcre.a libpcre2-8.a libcurl.dll.a; do
+            cp "$MINGLIB/$lib" fbc-win64/lib/win64/ 2>/dev/null || true
+          done
+
+          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc"
+          cd doc/libfbdoc
+          make FBC="$FBC" </dev/null
+          cd ../fbdoc
+          make FBC="$FBC" </dev/null
+          cd ../makefbhelp
+          make FBC="$FBC" </dev/null
+
+      - name: Generate documentation (all formats)
+        run: |
+          export PATH="/c/hhw:$PATH"
+          cd doc/manual
+          make all FBDOC="../fbdoc/fbdoc -usecache" </dev/null || true
+          test -f html/fbdoc.chm
+
+      - name: Upload documentation artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: FreeBASIC-manual
+          path: |
+            doc/manual/FB-manual-*
