@@ -343,6 +343,8 @@ jobs:
           update: false
           install: >-
             make
+            zip
+            gzip
             mingw-w64-x86_64-pcre
             mingw-w64-x86_64-curl
 
@@ -363,15 +365,16 @@ jobs:
           cd ../makefbhelp
           make FBC="$FBC" </dev/null
 
-      - name: Generate CHM
+      - name: Generate documentation (all formats)
         run: |
           export PATH="/c/hhw:$PATH"
           cd doc/manual
-          make html/fbdoc.chm FBDOC="../fbdoc/fbdoc -usecache" </dev/null || true
+          make all FBDOC="../fbdoc/fbdoc -usecache" </dev/null || true
           test -f html/fbdoc.chm
 
-      - name: Upload CHM artifact
+      - name: Upload documentation artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: FreeBASIC-manual-chm
-          path: doc/manual/html/fbdoc.chm
+          name: FreeBASIC-manual
+          path: |
+            doc/manual/FB-manual-*
