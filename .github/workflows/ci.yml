@@ -292,6 +292,17 @@ jobs:
           # Register binfmt so ARM binaries run transparently via qemu
           sudo update-binfmts --enable qemu-arm
 
+          # fbc (ARM) will invoke 'gcc', 'as', 'ld' etc. which are x86_64 on
+          # the host. Create a local bin dir with symlinks to the cross-tools
+          # and prepend it to PATH so fbc finds them.
+          mkdir -p cross-bin
+          ln -sf /usr/bin/arm-linux-gnueabihf-gcc cross-bin/gcc
+          ln -sf /usr/bin/arm-linux-gnueabihf-g++ cross-bin/g++
+          ln -sf /usr/bin/arm-linux-gnueabihf-as cross-bin/as
+          ln -sf /usr/bin/arm-linux-gnueabihf-ld cross-bin/ld
+          ln -sf /usr/bin/arm-linux-gnueabihf-ar cross-bin/ar
+          export PATH="$PWD/cross-bin:$PATH"
+
           # Verify fbc runs under QEMU
           bin/fbc --version
 
