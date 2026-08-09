@@ -98,14 +98,14 @@ jobs:
         run: |
           cd tests/warnings
           FBC="$PWD/../../bin/fbc -i $PWD/../../inc" ./test.sh </dev/null
-          git diff --exit-code tests/warnings/r/
+          git diff --exit-code -- r/
 
       - name: Run syntax tests
         if: matrix.test_flags == ''
         run: |
           cd tests/syntax
           FBC="$PWD/../../bin/fbc -i $PWD/../../inc" ./test.sh </dev/null
-          git diff --exit-code tests/syntax/r/
+          git diff --exit-code -- r/
 
       - name: Build documentation tools (fbdoc validation)
         if: matrix.test_flags == ''
