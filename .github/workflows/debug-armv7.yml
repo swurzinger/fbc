@@ -9,10 +9,35 @@ env:
   BOOTSTRAP_VERSION: "1.10.1"
 
 jobs:
-  # Step 1: Just install deps (matching the real CI)
-  armv7-install-deps:
+  # Test: can we wget anything at all?
+  armv7-network-test:
     runs-on: ubuntu-24.04
-    name: "armv7 - install deps only"
+    name: "armv7 - network test"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: bookworm
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y --no-install-recommends wget ca-certificates
+          run: |
+            set -e
+            echo "Testing DNS..."
+            cat /etc/resolv.conf
+            echo "Testing small download..."
+            wget -q -O /dev/null "https://github.com/robots.txt"
+            echo "Small download OK"
+            echo "Testing large download..."
+            wget -q -O /dev/null "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz"
+            echo "Large download OK"
+
+  # Test: is it the install size/time that causes issues?
+  armv7-heavy-install:
+    runs-on: ubuntu-24.04
+    name: "armv7 - heavy install + wget"
     steps:
       - uses: actions/checkout@v7
       - uses: uraimo/run-on-arch-action@v3
@@ -23,30 +48,33 @@ jobs:
           install: |
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
-              gcc g++ make wget xz-utils \
+              gcc g++ make wget xz-utils ca-certificates \
               libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
               libgpm-dev libx11-dev libxext-dev libxpm-dev \
               libxrender-dev libxrandr-dev
           run: |
-            uname -a
-            gcc --version
-            echo "Install deps succeeded!"
+            set -e
+            echo "Testing wget after heavy install..."
+            wget -q -O /dev/null "https://github.com/robots.txt"
+            echo "Small download OK"
+            wget -q "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz"
+            ls -la FreeBASIC-*.tar.xz
+            echo "Bootstrap download OK"
 
-  # Step 2: Install deps + download bootstrap
-  armv7-download-bootstrap:
+  # Test: skip githubToken (no image caching) in case cached image is broken
+  armv7-no-cache:
     runs-on: ubuntu-24.04
-    name: "armv7 - download bootstrap"
+    name: "armv7 - no image cache"
     steps:
       - uses: actions/checkout@v7
       - uses: uraimo/run-on-arch-action@v3
         with:
           arch: armv7
           distro: bookworm
-          githubToken: ${{ github.token }}
           install: |
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
-              gcc g++ make wget xz-utils \
+              gcc g++ make wget xz-utils ca-certificates \
               libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
               libgpm-dev libx11-dev libxext-dev libxpm-dev \
               libxrender-dev libxrandr-dev
@@ -55,52 +83,36 @@ jobs:
             BOOTSTRAP_PACKAGE="FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap"
             wget -q "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/${BOOTSTRAP_PACKAGE}.tar.xz"
             tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
-            ls -la "${BOOTSTRAP_PACKAGE}/"
-            echo "Download + extract succeeded!"
+            ls "${BOOTSTRAP_PACKAGE}/bootstrap/linux-arm/"
+            echo "Success!"
 
-  # Step 3: Full build (same as real CI)
-  armv7-full-build:
+  # Test: download on host, pass via volume mount
+  armv7-host-download:
     runs-on: ubuntu-24.04
-    name: "armv7 - full build"
+    name: "armv7 - host download + volume"
     steps:
       - uses: actions/checkout@v7
+
+      - name: Download bootstrap on host
+        run: |
+          wget -q "https://github.com/freebasic/fbc/releases/download/${{ env.BOOTSTRAP_VERSION }}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz"
+
       - uses: uraimo/run-on-arch-action@v3
         with:
           arch: armv7
           distro: bookworm
           githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${PWD}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz:/bootstrap.tar.xz"
           install: |
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
-              gcc g++ make wget xz-utils \
+              gcc g++ make xz-utils \
               libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
               libgpm-dev libx11-dev libxext-dev libxpm-dev \
               libxrender-dev libxrandr-dev
           run: |
             set -e
-            BOOTSTRAP_VERSION="${{ env.BOOTSTRAP_VERSION }}"
-            BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
-
-            # Download and build bootstrap compiler
-            wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
-            tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
-            cd "${BOOTSTRAP_PACKAGE}"
-            make -j$(nproc) bootstrap
-            cd ..
-
-            # Build fbc (pass 1 - using bootstrap)
-            rm -f config.mk
-            make -j$(nproc) FBC="${BOOTSTRAP_PACKAGE}/bin/fbc -i ${BOOTSTRAP_PACKAGE}/inc" </dev/null
-
-            # Rebuild fbc (pass 2 - self-host)
-            mv bin/fbc bin/fbc_pass1
-            make -j$(nproc) clean-compiler
-            make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
-            rm bin/fbc_pass1
-
-            # Verify
-            bin/fbc --version
-
-            # Run unit tests
-            cd tests
-            make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
+            tar xf /bootstrap.tar.xz
+            ls FreeBASIC-*/bootstrap/linux-arm/
+            echo "Volume mount + extract OK"
