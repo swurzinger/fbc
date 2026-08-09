@@ -211,6 +211,82 @@ jobs:
             inc/
 
   # ===========================================================================
+  # Linux ARM (armv6/armv7 via QEMU emulation for Raspberry Pi)
+  # ===========================================================================
+  linux-arm:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Linux armv7 (Raspberry Pi)"
+            arch: armv7
+            distro: bookworm
+          - name: "Linux armv6 (Raspberry Pi Zero)"
+            arch: armv6
+            distro: bookworm
+
+    name: ${{ matrix.name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build and test on ${{ matrix.arch }}
+        uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: ${{ matrix.arch }}
+          distro: ${{ matrix.distro }}
+          githubToken: ${{ github.token }}
+
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y --no-install-recommends \
+              gcc g++ make wget xz-utils \
+              libncurses-dev libffi-dev \
+              libgpm-dev libx11-dev libxext-dev libxpm-dev \
+              libxrender-dev libxrandr-dev
+
+          run: |
+            set -e
+            BOOTSTRAP_VERSION="${{ env.BOOTSTRAP_VERSION }}"
+            BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
+
+            # Download and build bootstrap compiler
+            wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
+            tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
+            cd "${BOOTSTRAP_PACKAGE}"
+            make -j$(nproc) bootstrap
+            cd ..
+
+            # Build fbc (pass 1 - using bootstrap)
+            rm -f config.mk
+            make -j$(nproc) FBC="${BOOTSTRAP_PACKAGE}/bin/fbc -i ${BOOTSTRAP_PACKAGE}/inc" </dev/null
+
+            # Rebuild fbc (pass 2 - self-host)
+            mv bin/fbc bin/fbc_pass1
+            make -j$(nproc) clean-compiler
+            make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
+            rm bin/fbc_pass1
+
+            # Verify
+            bin/fbc --version
+
+            # Run unit tests
+            cd tests
+            make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
+
+      - name: Upload fbc binary
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fbc-linux-${{ matrix.arch }}
+          path: |
+            bin/fbc
+            lib/freebasic/linux-arm/
+            inc/
+
+  # ===========================================================================
   # Windows (x86 and x64) using MSYS2 + MinGW-w64
   # ===========================================================================
   windows:
