@@ -271,7 +271,7 @@ jobs:
       - name: Build fbc (pass 1 - cross-compile using bootstrap)
         run: |
           rm -f config.mk
-          echo 'FBFLAGS += -arch armv7a+fp' > config.mk
+          echo 'FBFLAGS += -Wc -march=armv7-a+fp' > config.mk
           make -j$(nproc) TARGET=arm-linux-gnueabihf \
             FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
