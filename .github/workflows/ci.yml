@@ -125,6 +125,92 @@ jobs:
             inc/
 
   # ===========================================================================
+  # Linux aarch64 (native ARM64 runner)
+  # ===========================================================================
+  linux-aarch64:
+    runs-on: ubuntu-24.04-arm
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: "Linux aarch64"
+            build_flags: ""
+            test_flags: ""
+
+    name: ${{ matrix.name }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -y --no-install-recommends install \
+            gcc g++ make \
+            libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
+            libgpm-dev libx11-dev libxext-dev libxpm-dev \
+            libxrender-dev libxrandr-dev libcunit1-dev
+
+      - name: Restore bootstrap cache
+        id: cache-bootstrap
+        uses: actions/cache/restore@v6
+        with:
+          path: bootstrap
+          key: bootstrap-linux-aarch64-${{ env.BOOTSTRAP_VERSION }}
+
+      - name: Download and build bootstrap compiler
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+        run: |
+          BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
+          wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
+          tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
+          cd "${BOOTSTRAP_PACKAGE}"
+          make -j$(nproc) bootstrap
+          cd ..
+          mv "${BOOTSTRAP_PACKAGE}" bootstrap
+
+      - name: Save bootstrap cache
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: bootstrap
+          key: bootstrap-linux-aarch64-${{ env.BOOTSTRAP_VERSION }}
+
+      - name: Build fbc (pass 1 - using bootstrap)
+        run: |
+          rm -f config.mk
+          printf '%s\n' '${{ matrix.build_flags }}' > config.mk
+          make -j$(nproc) FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
+
+      - name: Rebuild fbc (pass 2 - self-host)
+        run: |
+          mv bin/fbc bin/fbc_pass1
+          make -j$(nproc) clean-compiler
+          make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
+          rm bin/fbc_pass1
+
+      - name: Run unit tests
+        run: |
+          cd tests
+          make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc ${{ matrix.test_flags }}" </dev/null
+
+      - name: Run log tests
+        run: |
+          cd tests
+          make log-tests FBC="$PWD/../bin/fbc -i $PWD/../inc ${{ matrix.test_flags }}" </dev/null
+
+      - name: Upload fbc binary
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: fbc-linux-aarch64
+          path: |
+            bin/fbc
+            lib/freebasic/linux-aarch64/
+            inc/
+
+  # ===========================================================================
   # Windows (x86 and x64) using MSYS2 + MinGW-w64
   # ===========================================================================
   windows:
