@@ -336,6 +336,7 @@ jobs:
             make
             zip
             gzip
+            mingw-w64-x86_64-crt-git
             mingw-w64-x86_64-pcre
             mingw-w64-x86_64-pcre2
             mingw-w64-x86_64-curl
@@ -351,13 +352,9 @@ jobs:
         run: |
           # Copy libraries that fbdoc needs into fbc's lib/win64/ so the
           # standalone linker can find them
-          SYSLIB="/$MSYSTEM/x86_64-w64-mingw32/lib"
           MINGLIB="/$MSYSTEM/lib"
-          for lib in libws2_32.a libmsimg32.a libversion.a libimm32.a; do
-            cp "$SYSLIB/$lib" fbc-win64/lib/win64/ 2>/dev/null || \
-            cp "$MINGLIB/$lib" fbc-win64/lib/win64/ 2>/dev/null || true
-          done
-          for lib in libpcre.a libpcre2-8.a libcurl.dll.a; do
+          for lib in libws2_32.a libmsimg32.a libversion.a libimm32.a \
+                     libpcre.a libpcre2-8.a libcurl.dll.a; do
             cp "$MINGLIB/$lib" fbc-win64/lib/win64/ 2>/dev/null || true
           done
 
