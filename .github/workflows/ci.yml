@@ -43,7 +43,8 @@ jobs:
             gcc g++ make \
             libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
             libgpm-dev libx11-dev libxext-dev libxpm-dev \
-            libxrender-dev libxrandr-dev libcunit1-dev
+            libxrender-dev libxrandr-dev libcunit1-dev \
+            libcurl4-openssl-dev libpcre3-dev
 
       - name: Restore bootstrap cache
         id: cache-bootstrap
