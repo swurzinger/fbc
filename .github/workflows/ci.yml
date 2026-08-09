@@ -352,10 +352,10 @@ jobs:
           curl -sL -o htmlhelp.exe https://web.archive.org/web/20200918004813/https://download.microsoft.com/download/0/A/9/0A939EF6-E31C-430F-A3DF-DFAE7960D564/htmlhelp.exe
           htmlhelp.exe /Q /T:"%TEMP%\htmlhelp" /C
           mkdir "C:\Program Files (x86)\HTML Help Workshop" 2>nul
-          copy "%TEMP%\htmlhelp\hhc.exe" "C:\Program Files (x86)\HTML Help Workshop\"
-          copy "%TEMP%\htmlhelp\hha.dll" "C:\Program Files (x86)\HTML Help Workshop\"
-          copy "%TEMP%\htmlhelp\itcc.dll" "C:\Program Files (x86)\HTML Help Workshop\"
-          copy "%TEMP%\htmlhelp\itircl.dll" "C:\Program Files (x86)\HTML Help Workshop\"
+          copy "%TEMP%\htmlhelp\hhc.exe" "C:\Program Files (x86)\HTML Help Workshop\" || exit /b 1
+          copy "%TEMP%\htmlhelp\hha.dll" "C:\Program Files (x86)\HTML Help Workshop\" || exit /b 1
+          if exist "%TEMP%\htmlhelp\itcc.dll" copy "%TEMP%\htmlhelp\itcc.dll" "C:\Program Files (x86)\HTML Help Workshop\"
+          if exist "%TEMP%\htmlhelp\itircl.dll" copy "%TEMP%\htmlhelp\itircl.dll" "C:\Program Files (x86)\HTML Help Workshop\"
 
       - name: Build documentation tools
         run: |
