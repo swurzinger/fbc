@@ -310,7 +310,13 @@ jobs:
           # Run unit tests - fbc will compile .bas to ARM, and the resulting
           # test binaries will run transparently via qemu-user-static
           export QEMU_CPU=cortex-a15
+          # Allow unaligned accesses (SIGBUS workaround for QEMU user-mode)
+          export QEMU_UNAME=armv7l
           cd tests
+          # First try a simple test to verify basic execution works
+          echo 'print "Hello from ARM"' > /tmp/hello.bas
+          ../bin/fbc -i ../inc /tmp/hello.bas -x /tmp/hello_arm
+          /tmp/hello_arm || echo "Simple test exit code: $?"
           make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
             make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
 
