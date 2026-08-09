@@ -26,6 +26,9 @@ jobs:
           - name: "Linux x86_64 (debug)"
             build_flags: "FBFLAGS += -g -exx"
             test_flags: "-g -exx"
+          - name: "Linux x86_64 (gas64)"
+            build_flags: ""
+            test_flags: "-gen gas64"
 
     name: ${{ matrix.name }}
 
