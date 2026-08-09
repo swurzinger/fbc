@@ -211,80 +211,89 @@ jobs:
             inc/
 
   # ===========================================================================
-  # Linux ARM (armv6/armv7 via QEMU emulation for Raspberry Pi)
+  # Linux ARM (armv7, cross-compiled on x86_64, tests via QEMU)
   # ===========================================================================
   linux-arm:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: "Linux armv7 (Raspberry Pi)"
-            arch: armv7
-            distro: bookworm
-          - name: "Linux armv6 (Raspberry Pi Zero)"
-            arch: armv6
-            distro: bookworm
-
-    name: ${{ matrix.name }}
+    name: "Linux armv7 (Raspberry Pi)"
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Download bootstrap on host
+      - name: Install cross-compilation toolchain
         run: |
-          wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap.tar.xz"
+          sudo apt-get -qq update
+          sudo apt-get -y --no-install-recommends install \
+            gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
+            make
 
-      - name: Build and test on ${{ matrix.arch }}
+      - name: Restore bootstrap cache
+        id: cache-bootstrap
+        uses: actions/cache/restore@v6
+        with:
+          path: bootstrap
+          key: bootstrap-linux-arm-${{ env.BOOTSTRAP_VERSION }}
+
+      - name: Download and build bootstrap compiler
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+        run: |
+          BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
+          wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
+          tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
+          cd "${BOOTSTRAP_PACKAGE}"
+          make -j$(nproc) bootstrap TARGET=arm-linux-gnueabihf
+          cd ..
+          mv "${BOOTSTRAP_PACKAGE}" bootstrap
+
+      - name: Save bootstrap cache
+        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: bootstrap
+          key: bootstrap-linux-arm-${{ env.BOOTSTRAP_VERSION }}
+
+      - name: Build fbc (pass 1 - cross-compile using bootstrap)
+        run: |
+          rm -f config.mk
+          make -j$(nproc) TARGET=arm-linux-gnueabihf \
+            FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
+
+      - name: Rebuild fbc (pass 2 - self-host cross-compile)
+        run: |
+          mv bin/fbc bin/fbc_pass1
+          make -j$(nproc) clean-compiler
+          make -j$(nproc) TARGET=arm-linux-gnueabihf \
+            compiler FBC='bin/fbc_pass1 -i inc' </dev/null
+          rm bin/fbc_pass1
+
+      - name: Run unit tests (via QEMU)
         uses: uraimo/run-on-arch-action@v3
         with:
-          arch: ${{ matrix.arch }}
-          distro: ${{ matrix.distro }}
+          arch: armv7
+          distro: bookworm
           githubToken: ${{ github.token }}
           dockerRunArgs: |
-            --volume "${PWD}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz:/bootstrap.tar.xz"
-
+            --volume "${PWD}:/fbc"
           install: |
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
-              gcc g++ make xz-utils \
+              gcc g++ make \
               libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
               libgpm-dev libx11-dev libxext-dev libxpm-dev \
-              libxrender-dev libxrandr-dev
-
+              libxrender-dev libxrandr-dev libcunit1-dev
           run: |
             set -e
-            BOOTSTRAP_PACKAGE="FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap"
-
-            # Extract bootstrap (downloaded on host, mounted as volume)
-            tar xf /bootstrap.tar.xz
-            cd "${BOOTSTRAP_PACKAGE}"
-            make -j$(nproc) bootstrap
-            cd ..
-
-            # Build fbc (pass 1 - using bootstrap)
-            rm -f config.mk
-            make -j$(nproc) FBC="${BOOTSTRAP_PACKAGE}/bin/fbc -i ${BOOTSTRAP_PACKAGE}/inc" </dev/null
-
-            # Rebuild fbc (pass 2 - self-host)
-            mv bin/fbc bin/fbc_pass1
-            make -j$(nproc) clean-compiler
-            make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
-            rm bin/fbc_pass1
-
-            # Verify
+            cd /fbc
             bin/fbc --version
-
-            # Run unit tests
             cd tests
-            make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
+            make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
 
       - name: Upload fbc binary
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: fbc-linux-${{ matrix.arch }}
+          name: fbc-linux-armv7
           path: |
             bin/fbc
             lib/freebasic/linux-arm/
