@@ -272,14 +272,15 @@ jobs:
         run: |
           rm -f config.mk
           printf '%s\n' 'FBFLAGS += -Wc -march=armv7-a+fp' > config.mk
-          # The bootstrap was built for x86_64; symlink the ARM lib dir so
-          # the bootstrap fbc can find runtime objects (fbrt0.o, libfb.a etc.)
-          # at its expected path (bootstrap/lib/freebasic/linux-arm/)
-          mkdir -p lib/freebasic/linux-arm
-          cp lib/fbextra.x lib/freebasic/linux-arm/
-          mkdir -p bootstrap/lib/freebasic
-          ln -sf "$PWD/lib/freebasic/linux-arm" bootstrap/lib/freebasic/linux-arm
-          make -j$(nproc) TARGET=arm-linux-gnueabihf \
+          # The bootstrap fbc resolves runtime libs relative to its own prefix.
+          # Symlink its lib dir to the project build output so it finds the
+          # ARM libs once they're built.
+          rm -rf bootstrap/lib/freebasic
+          ln -sf "$PWD/lib/freebasic" bootstrap/lib/freebasic
+          # Build rtlib and gfxlib2 first (provides fbrt0.o, libfb.a, fbextra.x)
+          make -j$(nproc) rtlib gfxlib2 TARGET=arm-linux-gnueabihf </dev/null
+          # Now build the compiler (links against the ARM rtlib above)
+          make -j$(nproc) compiler TARGET=arm-linux-gnueabihf \
             FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
       - name: Rebuild fbc (pass 2) and run tests (via QEMU)
