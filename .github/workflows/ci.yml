@@ -93,6 +93,20 @@ jobs:
           cd tests
           make log-tests FBC="$PWD/../bin/fbc -i $PWD/../inc ${{ matrix.test_flags }}" </dev/null
 
+      - name: Run warning tests
+        if: matrix.test_flags == ''
+        run: |
+          cd tests/warnings
+          FBC="$PWD/../../bin/fbc -i $PWD/../../inc" ./test.sh </dev/null
+          git diff --exit-code tests/warnings/r/
+
+      - name: Run syntax tests
+        if: matrix.test_flags == ''
+        run: |
+          cd tests/syntax
+          FBC="$PWD/../../bin/fbc -i $PWD/../../inc" ./test.sh </dev/null
+          git diff --exit-code tests/syntax/r/
+
       - name: Upload fbc binary
         if: success() && matrix.test_flags == ''
         uses: actions/upload-artifact@v7
