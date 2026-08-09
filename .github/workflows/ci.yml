@@ -107,6 +107,12 @@ jobs:
           FBC="$PWD/../../bin/fbc -i $PWD/../../inc" ./test.sh </dev/null
           git diff --exit-code tests/syntax/r/
 
+      - name: Build documentation tools (fbdoc validation)
+        if: matrix.test_flags == ''
+        run: |
+          cd doc
+          make FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
+
       - name: Upload fbc binary
         if: success() && matrix.test_flags == ''
         uses: actions/upload-artifact@v7
