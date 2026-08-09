@@ -284,40 +284,27 @@ jobs:
           make -j$(nproc) compiler TARGET=arm-linux-gnueabihf \
             FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
-      - name: Run tests (via QEMU user-mode)
-        run: |
-          # Install QEMU user-mode and ARM dynamic linker/libs
-          sudo apt-get -y --no-install-recommends install \
-            qemu-user-static binfmt-support
-
-          # Register binfmt so ARM binaries run transparently via qemu
-          sudo update-binfmts --enable qemu-arm
-
-          # fbc (ARM) will invoke 'gcc', 'as', 'ld' etc. which are x86_64 on
-          # the host. Create a local bin dir with symlinks to the cross-tools
-          # and prepend it to PATH so fbc finds them.
-          mkdir -p cross-bin
-          ln -sf /usr/bin/arm-linux-gnueabihf-gcc cross-bin/gcc
-          ln -sf /usr/bin/arm-linux-gnueabihf-g++ cross-bin/g++
-          ln -sf /usr/bin/arm-linux-gnueabihf-as cross-bin/as
-          ln -sf /usr/bin/arm-linux-gnueabihf-ld cross-bin/ld
-          ln -sf /usr/bin/arm-linux-gnueabihf-ar cross-bin/ar
-          export PATH="$PWD/cross-bin:$PATH"
-
-          # Verify fbc runs under QEMU
-          bin/fbc --version
-
-          # Run unit tests - fbc will compile .bas to ARM, and the resulting
-          # test binaries will run transparently via qemu-user-static
-          export QEMU_CPU=cortex-a15
-          # Allow unaligned accesses (SIGBUS workaround for QEMU user-mode)
-          export QEMU_UNAME=armv7l
-          cd tests
-          # First try a simple test to verify basic execution works
-          echo 'print "Hello from ARM"' > /tmp/hello.bas
-          ../bin/fbc -i ../inc /tmp/hello.bas -x /tmp/hello_arm
-          /tmp/hello_arm || echo "Simple test exit code: $?"
-          make unit-tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
+      - name: Run tests (via QEMU)
+        uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: ubuntu24.04
+          githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${PWD}:/fbc"
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y --no-install-recommends \
+              gcc g++ make \
+              libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
+              libgpm-dev libx11-dev libxext-dev libxpm-dev \
+              libxrender-dev libxrandr-dev libcunit1-dev
+          run: |
+            set -e
+            cd /fbc
+            bin/fbc --version
+            cd tests
+            make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
             make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
 
       - name: Upload fbc binary
