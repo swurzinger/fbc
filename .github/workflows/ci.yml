@@ -274,15 +274,7 @@ jobs:
           make -j$(nproc) TARGET=arm-linux-gnueabihf \
             FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
 
-      - name: Rebuild fbc (pass 2 - self-host cross-compile)
-        run: |
-          mv bin/fbc bin/fbc_pass1
-          make -j$(nproc) clean-compiler
-          make -j$(nproc) TARGET=arm-linux-gnueabihf \
-            compiler FBC='bin/fbc_pass1 -i inc' </dev/null
-          rm bin/fbc_pass1
-
-      - name: Run unit tests (via QEMU)
+      - name: Rebuild fbc (pass 2) and run tests (via QEMU)
         uses: uraimo/run-on-arch-action@v3
         with:
           arch: armv7
@@ -300,7 +292,17 @@ jobs:
           run: |
             set -e
             cd /fbc
+
+            # Pass 2 - self-host: use the pass 1 ARM fbc to recompile itself
+            mv bin/fbc bin/fbc_pass1
+            make -j$(nproc) clean-compiler
+            make -j$(nproc) compiler FBC='bin/fbc_pass1 -i inc' </dev/null
+            rm bin/fbc_pass1
+
+            # Verify
             bin/fbc --version
+
+            # Run unit tests
             cd tests
             make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
 
