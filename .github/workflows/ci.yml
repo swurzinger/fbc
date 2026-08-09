@@ -287,7 +287,7 @@ jobs:
         uses: uraimo/run-on-arch-action@v3
         with:
           arch: armv7
-          distro: bookworm
+          distro: ubuntu24.04
           githubToken: ${{ github.token }}
           dockerRunArgs: |
             --volume "${PWD}:/fbc"
