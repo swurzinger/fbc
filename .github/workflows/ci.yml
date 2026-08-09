@@ -283,7 +283,7 @@ jobs:
           ./fbc hello.bas
           ./hello.exe
 
-      - name: Package minimal standalone compiler
+      - name: Package standalone compiler
         run: |
           FBTARGET="${{ matrix.fbtarget }}"
           PKGDIR="fbc-$FBTARGET"
@@ -291,27 +291,17 @@ jobs:
 
           cp fbc.exe "$PKGDIR/"
           cp -r bin/ "$PKGDIR/bin/"
-
-          mkdir -p "$PKGDIR/lib/$FBTARGET"
-          cp lib/$FBTARGET/*.a "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
-          cp lib/$FBTARGET/*.o "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
-          cp lib/$FBTARGET/*.x "$PKGDIR/lib/$FBTARGET/" 2>/dev/null || true
-
-          mkdir -p "$PKGDIR/inc/fbc-int"
-          for f in datetime.bi dir.bi file.bi string.bi utf_conv.bi vbcompat.bi; do
-            cp "inc/$f" "$PKGDIR/inc/" 2>/dev/null || true
-          done
-          cp inc/fb*.bi "$PKGDIR/inc/" 2>/dev/null || true
-          cp inc/fbc-int/* "$PKGDIR/inc/fbc-int/" 2>/dev/null || true
+          cp -r lib/ "$PKGDIR/lib/"
+          cp -r inc/ "$PKGDIR/inc/"
 
           cp changelog.txt "$PKGDIR/" 2>/dev/null || true
           cp readme.txt "$PKGDIR/" 2>/dev/null || true
 
-      - name: Upload minimal compiler package
+      - name: Upload compiler package
         if: success()
         uses: actions/upload-artifact@v7
         with:
-          name: fbc-${{ matrix.fbtarget }}-minimal
+          name: fbc-${{ matrix.fbtarget }}
           path: fbc-${{ matrix.fbtarget }}/
 
 
@@ -331,10 +321,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Download fbc-win64-minimal artifact
+      - name: Download fbc-win64 artifact
         uses: actions/download-artifact@v7
         with:
-          name: fbc-win64-minimal
+          name: fbc-win64
           path: fbc-win64
 
       - name: Setup MSYS2
@@ -358,7 +348,7 @@ jobs:
 
       - name: Build documentation tools
         run: |
-          FBC="$PWD/fbc-win64/fbc -i $PWD/inc"
+          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc"
           cd doc/libfbdoc
           make FBC="$FBC" </dev/null
           cd ../fbdoc
