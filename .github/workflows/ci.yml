@@ -223,10 +223,14 @@ jobs:
 
       - name: Install cross-compilation toolchain
         run: |
+          sudo dpkg --add-architecture armhf
           sudo apt-get -qq update
           sudo apt-get -y --no-install-recommends install \
             gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf \
-            make
+            make \
+            libncurses-dev:armhf libffi-dev:armhf libgl1-mesa-dev:armhf libglu1-mesa-dev:armhf \
+            libgpm-dev:armhf libx11-dev:armhf libxext-dev:armhf libxpm-dev:armhf \
+            libxrender-dev:armhf libxrandr-dev:armhf
 
       - name: Restore bootstrap cache
         id: cache-bootstrap
