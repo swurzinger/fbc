@@ -319,6 +319,7 @@ jobs:
   # ===========================================================================
   documentation:
     runs-on: windows-latest
+    needs: windows
     name: "Documentation (CHM)"
 
     defaults:
@@ -329,130 +330,49 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Download fbc-win64-minimal artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: fbc-win64-minimal
+          path: fbc-win64
+
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW32
+          msystem: MINGW64
           update: false
           install: >-
             make
-            tar
-            xz
-            mingw-w64-i686-gcc
-            mingw-w64-i686-binutils
-            mingw-w64-i686-libffi
-            mingw-w64-i686-pcre
-            mingw-w64-i686-curl
+            mingw-w64-x86_64-pcre
+            mingw-w64-x86_64-curl
 
-      - name: Restore bootstrap cache
-        id: cache-bootstrap
-        uses: actions/cache/restore@v6
-        with:
-          path: bootstrap
-          key: bootstrap-win32-${{ env.BOOTSTRAP_VERSION }}
-
-      - name: Download and build bootstrap compiler
-        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
+      - name: Install HTML Help Workshop
+        shell: cmd
         run: |
-          BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
-          curl -sL "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz" -o "${BOOTSTRAP_PACKAGE}.tar.xz"
-          tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
-          cd "${BOOTSTRAP_PACKAGE}"
-          make -j$(nproc) bootstrap
-          cd ..
-          mv "${BOOTSTRAP_PACKAGE}" bootstrap
-
-      - name: Save bootstrap cache
-        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v6
-        with:
-          path: bootstrap
-          key: bootstrap-win32-${{ env.BOOTSTRAP_VERSION }}
-
-      - name: Build fbc
-        run: |
-          rm -f config.mk
-          echo "ENABLE_STANDALONE := 1" > config.mk
-          make -j$(nproc) FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
-
-      - name: Populate standalone toolchain dirs
-        run: |
-          FBTARGET="win32"
-          GCC_TARGET="$(gcc -dumpmachine)"
-          GCC_VERSION="$(gcc -dumpversion)"
-          MINGW_BIN="$(dirname $(which gcc))"
-          MINGW_PREFIX="$MINGW_BIN/.."
-
-          mkdir -p bin/$FBTARGET
-          for tool in ar as ld gcc; do
-            cp "$MINGW_BIN/$tool.exe" bin/$FBTARGET/
-          done
-
-          CC1_DIR="bin/lib/gcc/$GCC_TARGET/$GCC_VERSION"
-          mkdir -p "$CC1_DIR"
-          REAL_CC1="$MINGW_PREFIX/lib/gcc/$GCC_TARGET/$GCC_VERSION/cc1.exe"
-          if [ ! -f "$REAL_CC1" ]; then
-            REAL_CC1="$MINGW_PREFIX/libexec/gcc/$GCC_TARGET/$GCC_VERSION/cc1.exe"
-          fi
-          cp "$REAL_CC1" "$CC1_DIR/"
-
-          mkdir -p lib/$FBTARGET
-
-          copy_file() {
-            path="$(gcc -print-file-name=$1)"
-            if [ "$path" != "$1" ] && [ -f "$path" ]; then
-              cp "$path" "lib/$FBTARGET/$2"
-              return 0
-            fi
-            return 1
-          }
-
-          for f in crt2.o dllcrt2.o crtbegin.o crtend.o; do
-            copy_file "$f" "$f" || true
-          done
-
-          for f in libgcc.a libgcc_eh.a libsupc++.a libmingw32.a libmingwex.a libmoldname.a; do
-            copy_file "$f" "$f" || true
-          done
-
-          for lib in advapi32 gdi32 kernel32 msvcrt user32 winmm winspool; do
-            copy_file "lib${lib}.a" "lib${lib}.dll.a" || true
-          done
-
-          copy_file "libffi.a" "libffi.a" || true
-
-          # DLL dependencies
-          for dll in libwinpthread-1.dll libgcc_s_dw2-1.dll libiconv-2.dll \
-                     libintl-8.dll zlib1.dll libzstd.dll; do
-            [ -f "$MINGW_BIN/$dll" ] && cp "$MINGW_BIN/$dll" bin/$FBTARGET/
-          done
-
-          for dll in libwinpthread-1.dll libgcc_s_dw2-1.dll libgmp-10.dll \
-                     libiconv-2.dll libisl-*.dll libmpc-3.dll libmpfr-6.dll \
-                     libzstd.dll zlib1.dll; do
-            for f in $MINGW_BIN/$dll; do
-              [ -f "$f" ] && cp "$f" "$CC1_DIR/"
-            done
-          done
+          curl -sL -o htmlhelp.exe https://web.archive.org/web/20200918004813/https://download.microsoft.com/download/0/A/9/0A939EF6-E31C-430F-A3DF-DFAE7960D564/htmlhelp.exe
+          htmlhelp.exe /Q /T:"%TEMP%\htmlhelp" /C
+          mkdir "C:\Program Files (x86)\HTML Help Workshop" 2>nul
+          copy "%TEMP%\htmlhelp\hhc.exe" "C:\Program Files (x86)\HTML Help Workshop\"
+          copy "%TEMP%\htmlhelp\hha.dll" "C:\Program Files (x86)\HTML Help Workshop\"
+          copy "%TEMP%\htmlhelp\itcc.dll" "C:\Program Files (x86)\HTML Help Workshop\"
+          copy "%TEMP%\htmlhelp\itircl.dll" "C:\Program Files (x86)\HTML Help Workshop\"
 
       - name: Build documentation tools
         run: |
-          FBC="$PWD/fbc -i $PWD/inc"
+          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc"
           cd doc/libfbdoc
           make FBC="$FBC" </dev/null
           cd ../fbdoc
           make FBC="$FBC" </dev/null
+          cd ../makefbhelp
+          make FBC="$FBC" </dev/null
 
-      - name: Generate CHM documentation
+      - name: Generate CHM
         run: |
-          cd doc/fbdoc
-          ./fbdoc -usecache -chm </dev/null
-
-      - name: Compile CHM with HTML Help Compiler
-        shell: cmd
-        run: |
-          "C:\Program Files (x86)\HTML Help Workshop\hhc.exe" doc\manual\html\fbdoc.hhp
-          if exist doc\manual\html\fbdoc.chm ( exit /b 0 ) else ( exit /b 1 )
+          export PATH="/c/Program Files (x86)/HTML Help Workshop:$PATH"
+          cd doc/manual
+          make html/fbdoc.chm FBDOC="../fbdoc/fbdoc -usecache" </dev/null || true
+          test -f html/fbdoc.chm
 
       - name: Upload CHM artifact
         uses: actions/upload-artifact@v7
