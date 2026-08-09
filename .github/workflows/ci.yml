@@ -232,29 +232,33 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Download bootstrap on host
+        run: |
+          wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap.tar.xz"
+
       - name: Build and test on ${{ matrix.arch }}
         uses: uraimo/run-on-arch-action@v3
         with:
           arch: ${{ matrix.arch }}
           distro: ${{ matrix.distro }}
           githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${PWD}/FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap.tar.xz:/bootstrap.tar.xz"
 
           install: |
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
-              gcc g++ make wget xz-utils \
+              gcc g++ make xz-utils \
               libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
               libgpm-dev libx11-dev libxext-dev libxpm-dev \
               libxrender-dev libxrandr-dev
 
           run: |
             set -e
-            BOOTSTRAP_VERSION="${{ env.BOOTSTRAP_VERSION }}"
-            BOOTSTRAP_PACKAGE="FreeBASIC-${BOOTSTRAP_VERSION}-source-bootstrap"
+            BOOTSTRAP_PACKAGE="FreeBASIC-${{ env.BOOTSTRAP_VERSION }}-source-bootstrap"
 
-            # Download and build bootstrap compiler
-            wget -q "https://github.com/freebasic/fbc/releases/download/${BOOTSTRAP_VERSION}/${BOOTSTRAP_PACKAGE}.tar.xz"
-            tar xf "${BOOTSTRAP_PACKAGE}.tar.xz"
+            # Extract bootstrap (downloaded on host, mounted as volume)
+            tar xf /bootstrap.tar.xz
             cd "${BOOTSTRAP_PACKAGE}"
             make -j$(nproc) bootstrap
             cd ..
