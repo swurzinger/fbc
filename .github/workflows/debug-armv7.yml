@@ -1,0 +1,84 @@
+name: Debug armv7
+
+on:
+  push:
+    branches: [ 'test/ci-armv7-debug' ]
+  workflow_dispatch:
+
+jobs:
+  # Try different distros to find one that works for armv7
+  armv7-bullseye:
+    runs-on: ubuntu-24.04
+    name: "armv7 - bullseye"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: bullseye
+          githubToken: ${{ github.token }}
+          run: |
+            uname -a
+            cat /etc/os-release
+            echo "armv7 bullseye works!"
+
+  armv7-bookworm:
+    runs-on: ubuntu-24.04
+    name: "armv7 - bookworm"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: bookworm
+          githubToken: ${{ github.token }}
+          run: |
+            uname -a
+            cat /etc/os-release
+            echo "armv7 bookworm works!"
+
+  armv7-ubuntu2204:
+    runs-on: ubuntu-24.04
+    name: "armv7 - ubuntu22.04"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+          run: |
+            uname -a
+            cat /etc/os-release
+            echo "armv7 ubuntu22.04 works!"
+
+  armv7-ubuntu2404:
+    runs-on: ubuntu-24.04
+    name: "armv7 - ubuntu24.04"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: ubuntu24.04
+          githubToken: ${{ github.token }}
+          run: |
+            uname -a
+            cat /etc/os-release
+            echo "armv7 ubuntu24.04 works!"
+
+  # Also test with ubuntu-22.04 host runner in case it's a host kernel issue
+  armv7-bookworm-host22:
+    runs-on: ubuntu-22.04
+    name: "armv7 - bookworm (host: ubuntu-22.04)"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: armv7
+          distro: bookworm
+          githubToken: ${{ github.token }}
+          run: |
+            uname -a
+            cat /etc/os-release
+            echo "armv7 bookworm on host 22.04 works!"
