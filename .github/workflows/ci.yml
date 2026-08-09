@@ -358,7 +358,7 @@ jobs:
 
       - name: Build documentation tools
         run: |
-          FBC="$PWD/fbc-win64/fbc -i $PWD/fbc-win64/inc"
+          FBC="$PWD/fbc-win64/fbc -i $PWD/inc"
           cd doc/libfbdoc
           make FBC="$FBC" </dev/null
           cd ../fbdoc
