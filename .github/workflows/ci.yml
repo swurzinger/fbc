@@ -271,13 +271,13 @@ jobs:
       - name: Build fbc (pass 1 - cross-compile using bootstrap)
         run: |
           rm -f config.mk
-          echo 'FBFLAGS += -Wc -march=armv7-a+fp' > config.mk
+          printf '%s\n' 'FBFLAGS += -Wc -march=armv7-a+fp' > config.mk
           # The bootstrap was built for x86_64; create the ARM lib dir with
           # the linker script so the cross-compiled fbc can link
           mkdir -p bootstrap/lib/freebasic/linux-arm
           cp lib/fbextra.x bootstrap/lib/freebasic/linux-arm/
           make -j$(nproc) TARGET=arm-linux-gnueabihf \
-            FBC="bootstrap/bin/fbc -i bootstrap/inc" </dev/null
+            FBC="bootstrap/bin/fbc -i bootstrap/inc -p lib/freebasic/linux-arm" </dev/null
 
       - name: Rebuild fbc (pass 2) and run tests (via QEMU)
         uses: uraimo/run-on-arch-action@v3
