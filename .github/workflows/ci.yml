@@ -243,7 +243,7 @@ jobs:
             apt-get update -q -y
             apt-get install -q -y --no-install-recommends \
               gcc g++ make wget xz-utils \
-              libncurses-dev libffi-dev \
+              libncurses-dev libffi-dev libgl1-mesa-dev libglu1-mesa-dev \
               libgpm-dev libx11-dev libxext-dev libxpm-dev \
               libxrender-dev libxrandr-dev
 
