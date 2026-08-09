@@ -272,6 +272,7 @@ jobs:
         run: |
           rm -f config.mk
           printf '%s\n' 'FBFLAGS += -Wc -march=armv7-a+fp' > config.mk
+          echo 'DEFAULT_CPUTYPE_ARM := FB_CPUTYPE_ARMV7A_FP' >> config.mk
           # The bootstrap fbc resolves runtime libs relative to its own prefix.
           # Symlink its lib dir to the project build output so it finds the
           # ARM libs once they're built.
