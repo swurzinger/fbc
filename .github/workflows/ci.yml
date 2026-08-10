@@ -306,23 +306,15 @@ jobs:
           # Build test binary but don't run it (will run in full QEMU)
           make -f unit-tests.mk make_fbcunit build_tests FBC="$PWD/../bin/fbc -i $PWD/../inc" </dev/null
 
-      - name: Run tests (via full QEMU)
-        uses: uraimo/run-on-arch-action@v3
-        with:
-          arch: armv7
-          distro: ubuntu24.04
-          githubToken: ${{ github.token }}
-          dockerRunArgs: |
-            --volume "${PWD}:/fbc"
-          install: |
-            apt-get update -q -y
-            apt-get install -q -y --no-install-recommends \
-              libncurses6 libffi8 libgl1 libglu1-mesa \
-              libgpm2 libx11-6 libxext6 libxpm4 \
-              libxrender1 libxrandr2 libcunit1
-          run: |
-            set -e
-            cd /fbc/tests
+      - name: Run tests (via QEMU user-mode)
+        run: |
+          cd tests
+          # Run the ARM test binary directly with qemu-arm-static
+          # Use -cpu cortex-a15 for proper VFP support and set the
+          # ARM sysroot for dynamic library resolution
+          qemu-arm-static \
+            -cpu cortex-a15 \
+            -L /usr/arm-linux-gnueabihf \
             ./fbc-tests
             make unit-tests FBC="/fbc/bin/fbc -i /fbc/inc" </dev/null
 
